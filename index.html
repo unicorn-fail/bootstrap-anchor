@@ -1,7 +1,509 @@
 <!DOCTYPE html>
 <html>
-<head></head>
-<body>
-<h1>Coming soon</h1>
+<head>
+  <script src="https://code.jquery.com/jquery-1.9.1.js"></script>
+  <script src="https://code.jquery.com/jquery.js"></script>
+  <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.css" rel="stylesheet" type="text/css" />
+  <link href="http://getbootstrap.com/assets/css/docs.min.css" rel="stylesheet" type="text/css" />
+  <link href="./dist/bootstrap-anchor.min.css" rel="stylesheet" type="text/css" />
+  <style type="text/css">
+    body.navbar-fixed {
+      padding-top: 50px;
+    }
+    body.navbar-fixed .navbar {
+      box-shadow: 0 3px 5px rgba(0,0,0,.1);
+    }
+    @media (min-width: 992px) {
+      body.navbar-fixed .bs-docs-sidebar.affix {
+        top: 70px;
+      }
+    }
+    .page-header, h1[id] {
+      margin-top: 20px;
+      padding-top: 0;
+    }
+  </style>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.js"></script>
+  <script src="./dist/bootstrap-anchor.min.js"></script>
+  <!--<script src="./dist/bootstrap-anchor.js"></script>-->
+  <script type="application/javascript">
+    +function ($) {
+      $(function () {
+        $(document).anchor({
+          exclude: '.bs-anchor-demo,[data-anchor-ignore],[data-dismiss],[data-slide],[data-toggle]:not([data-toggle="anchor"])',
+          link: 'a[href*="#"],[data-toggle="anchor"]',
+          selector: 'h1, h2, h3, h4'
+        })
+
+        $('.bs-anchor-demo').anchor({
+          generatePrefix: 'demo',
+          history: false
+        })
+
+        var $body = $('body')
+        var $navbar = $('.bs-docs-nav')
+        var navbarType = 'fixed'
+        var $navbarDemo = $('.navbar-demo')
+        var $navbarStatus = $navbarDemo.find('.status')
+        var $navbarToggle = $navbarDemo.find('.toggle')
+        var updateNavbar = function () {
+          var other = navbarType === 'static' ? 'fixed' : 'static'
+          $body.removeClass('navbar-' + other).addClass('navbar-' + navbarType)
+          $navbar.removeClass('navbar-' + other + '-top').addClass('navbar-' + navbarType + '-top')
+          $navbarStatus.text(navbarType)
+          $navbarToggle.text('Toggle navbar to "' + other + '"')
+        }
+        $navbarToggle.on('click', function () {
+          navbarType = navbarType === 'static' ? 'fixed' : 'static'
+          updateNavbar()
+        })
+        updateNavbar()
+
+        // Sidenav affixing
+        setTimeout(function () {
+          var $sideBar = $('.bs-docs-sidebar')
+
+          $sideBar.affix({
+            offset: {
+              top: function () {
+                var offsetTop      = $sideBar.offset().top
+                var sideBarMargin  = parseInt($sideBar.children(0).css('margin-top'), 10)
+                var navOuterHeight = $navbar.height()
+
+                return (this.top = offsetTop - navOuterHeight - sideBarMargin)
+              },
+              bottom: function () {
+                return (this.bottom = $('.bs-docs-footer').outerHeight(true))
+              }
+            }
+          })
+        }, 100)
+
+        setTimeout(function () {
+          $('.bs-top').affix()
+        }, 100)
+
+      })
+    }(jQuery)
+  </script>
+  <meta charset="utf-8">
+  <title>Bootstrap Anchor - The missing Bootstrap plugin!</title>
+</head>
+<body class="navbar-fixed" data-spy="scroll" data-offset="81">
+
+<nav id="top" class="navbar navbar-default navbar-fixed-top bs-docs-nav" data-history="false">
+  <div class="container">
+    <div class="navbar-header">
+      <button class="navbar-toggle collapsed" type="button" data-toggle="collapse" data-target=".bs-navbar-collapse">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a href="/" data-toggle="anchor" data-target="#top" class="navbar-brand">Bootstrap Anchor</a>
+    </div>
+
+    <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-6">
+      <ul class="nav navbar-nav">
+        <li><a href="#example">Example</a></li>
+        <li><a href="#usage">Usage</a></li>
+        <li><a href="#options">Options</a></li>
+        <li><a href="#methods">Methods</a></li>
+        <li><a href="#events">Events</a></li>
+      </ul>
+    </div><!-- /.navbar-collapse -->
+  </div>
+</nav>
+
+<div class="bs-docs-header" id="content" tabindex="-1">
+  <div class="container">
+    <h1 data-anchor-ignore="true">Bootstrap Anchor</h1>
+    <p>The missing Bootstrap anchor and scrolling plugin!</p>
+  </div>
+</div>
+
+<div class="container">
+
+  <div class="row">
+
+    <div class="col-sm-9" role="main">
+      <h1 id="anchors" class="page-header">Anchors <small>anchor.js</small></h1>
+      <p>Add tooltips containing a link to the anchor, like those on GitHub READMEs, to any element for direct access, bookmark or scrolling.</p>
+      <p>Anchors that have no <code>id</code> attribute and no text content to generate one are never displayed.</p>
+
+      <h2>Example</h2>
+      <p>This entire page is an example! Hover over the headings below to view the anchor tooltip. The second part of the plugin handles links clicks to anchors and scrolls to them. You can view this functionality in the sidebar to the right.</p>
+
+      <div class="bs-example">
+        <div class="row">
+          <div class="col-sm-5 col-sm-offset-1">
+            <h1 class="bs-anchor-demo">Heading 1</h1>
+            <h2 class="bs-anchor-demo">Heading 2</h2>
+            <h3 class="bs-anchor-demo">Heading 3</h3>
+            <h4 class="bs-anchor-demo">Heading 4</h4>
+            <h5 class="bs-anchor-demo">Heading 5</h5>
+            <h6 class="bs-anchor-demo">Heading 6</h6>
+          </div>
+          <div class="col-sm-6">
+            <h1 class="bs-anchor-demo">Heading 1</h1>
+            <h2 class="bs-anchor-demo">Heading 2</h2>
+            <h3 class="bs-anchor-demo">Heading 3</h3>
+            <h4 class="bs-anchor-demo">Heading 4</h4>
+            <h5 class="bs-anchor-demo">Heading 5</h5>
+            <h6 class="bs-anchor-demo">Heading 6</h6>
+          </div>
+        </div>
+      </div>
+
+      <div class="bs-example">
+        <h3 data-anchor-ignore="true">Automatic padding detection</h3>
+        <p>If the <code>BODY</code> element has any padding, say from a navbar, then it will automatically be calculated if the <code>viewport.padding</code> <a href="#options">option</a> is not specified or is <code>0</code>.</p>
+        <div class="navbar-demo">
+          <p class="clearfix">
+            <strong>Current style:</strong> <span class="label label-primary status">fixed</span>
+          </p>
+          <p><button class="btn btn-default toggle">Toggle navbar to "static"</button></p>
+        </div>
+      </div>
+
+      <h2>Usage</h2>
+      <p>The anchor plugin generates content and markup on demand, and places anchor tooltips inside their trigger element.</p>
+      <p>Instantiate the anchor plugin via JavaScript by binding the plugin to the DOM directly (preferred) or manually:</p>
+      <script src="https://gist.github.com/markcarver/e0502a756f44d5719c83.js"></script>
+
+      <div class="bs-callout bs-callout-danger">
+        <h4>Plugin dependency</h4>
+        <p>Anchors require the <a href="http://getbootstrap.com/javascript/#tooltips">tooltip plugin</a> to be included in your version of Bootstrap.</p>
+      </div>
+      <div class="bs-callout bs-callout-danger">
+        <h4>Opt-in functionality</h4>
+        <p>For performance reasons, the Tooltip, Popover and Anchor data-apis are opt-in, meaning <strong>you must initialize them yourself (see code above)</strong>.</p>
+      </div>
+      <div class="bs-callout bs-callout-info">
+        <h4>Excluding elements</h4>
+        <p>If automatically binding to the DOM, any elements that match the <code>exclude</code> <a href="#options">option</a> will always be ignored. This applies to both anchors and anchor links. This option can be disabled by passing an empty string or <code>false</code>.</p>
+        <p>If manually instantiating anchors or anchor links, you must also manually filter the returned elements (usually with <code>.not()</code>) before continuing to instantiate the plugin.</p>
+      </div>
+
+      <h2>Options</h2>
+      <p>Options can be passed via data attributes or JavaScript. For data attributes, append the option name to <code>data-</code>, as in <code>data-animation="false"</code>.</p>
+      <p class="help-block"><strong>Note:</strong> If the plugin is bound to a link and the link finds a matching anchor, it delegates the scrolling to the anchor's instance. This allows anchors (<code>h1, h2, h3</code>, etc.) to individual override to specific options, should the need arise.</p>
+      <div class="table-responsive">
+        <table class="table table-bordered table-striped js-options-table">
+          <thead>
+          <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Default</th>
+            <th>Description</th>
+          </tr>
+          </thead>
+          <tbody>
+          <tr>
+            <td>animation</td>
+            <td>boolean</td>
+            <td>Tooltip default (true)</td>
+            <td>Apply a CSS fade transition to the anchor tooltip (<code>@todo Document this more</code>)</td>
+          </tr>
+          <tr>
+            <td>delay</td>
+            <td>number | object</td>
+            <td>Tooltip default (0)</td>
+            <td>
+              <p>Delay showing and hiding the anchor tooltip (ms) - does not apply to manual trigger type</p>
+              <p>If a number is supplied, delay is applied to both hide/show</p>
+              <p>Object structure is: <code>delay: { "show": 500, "hide": 100 }</code></p>
+            </td>
+          </tr>
+          <tr>
+            <td>duration</td>
+            <td>number</td>
+            <td>300</td>
+            <td><code>@todo Document this</code></td>
+          </tr>
+          <tr>
+            <td>exclude</td>
+            <td>string</td>
+            <td>'[data-anchor-ignore],[data-dismiss],[data-slide],[data-toggle]:not([data-toggle="anchor"])'</td>
+            <td><code>@todo Document this</code></td>
+          </tr>
+          <tr>
+            <td>generate</td>
+            <td>bool</td>
+            <td>true</td>
+            <td><code>@todo Document this</code></td>
+          </tr>
+          <tr>
+            <td>generatePrefix</td>
+            <td>string | false</td>
+            <td>false</td>
+            <td><code>@todo Document this</code></td>
+          </tr>
+          <tr>
+            <td>history</td>
+            <td>string | false</td>
+            <td>'append'</td>
+            <td><code>@todo Document this</code></td>
+          </tr>
+          <tr>
+            <td>icon</td>
+            <td>string | false</td>
+            <td><code>'&lt;span class="glyphicon glyphicon-link" aria-hidden="true"&gt;&lt;/span&gt;'</code></td>
+            <td><code>@todo Document this</code></td>
+          </tr>
+          <tr>
+            <td>link</td>
+            <td>string | false</td>
+            <td>'a[href*="#"],[data-toggle="anchor"]'</td>
+            <td><code>@todo Document this</code></td>
+          </tr>
+          <tr>
+            <td>margin</td>
+            <td>number</td>
+            <td>20</td>
+            <td><code>@todo Document this</code></td>
+          </tr>
+          <tr>
+            <td>normalize</td>
+            <td>bool</td>
+            <td>true</td>
+            <td><code>@todo Document this</code></td>
+          </tr>
+          <tr>
+            <td>onLoad</td>
+            <td>bool</td>
+            <td>true</td>
+            <td><code>@todo Document this</code></td>
+          </tr>
+          <tr>
+            <td>onHashchange</td>
+            <td>bool</td>
+            <td>true</td>
+            <td><code>@todo Document this</code></td>
+          </tr>
+          <tr>
+            <td>placement</td>
+            <td>string | function</td>
+            <td>'auto left'</td>
+            <td>
+              <p>How to position the anchor tooltip - top | bottom | left | right | auto.<br>When "auto" is specified, it will dynamically reorient the anchor tooltip. For example, if placement is "auto left", the anchor tooltip will display to the left when possible, otherwise it will display right.</p>
+              <p>When a function is used to determine the placement, it is called with the tooltip DOM node as its first argument and the triggering element DOM node as its second. The <code>this</code> context is set to the tooltip instance.</p>
+            </td>
+          </tr>
+          <tr>
+            <td>selector</td>
+            <td>string</td>
+            <td>false</td>
+            <td>If a selector is provided, anchor tooltip objects will be delegated to the specified targets. In practice, this is used to enable dynamic HTML content to have tooltips added. See <a href="https://github.com/twbs/bootstrap/issues/4215">this</a> and <a href="http://jsbin.com/zopod/1/edit">an informative example</a>.</td>
+          </tr>
+          <tr>
+            <td>target</td>
+            <td>string | NodeElement | jQuery Object</td>
+            <td>false</td>
+            <td><code>@todo Document this</code></td>
+          </tr>
+          <tr>
+            <td>template</td>
+            <td>string</td>
+            <td><code>'&lt;div class="anchor-link" role="tooltip"&gt;&lt;a href="#anchor"&gt;&lt;/a&gt;&lt;/div&gt;'</code></td>
+            <td>
+              <p>Base HTML to use when creating the anchor tooltip.</p>
+              <p>The anchor tooltip's <code>icon</code> option will be injected into the link (<code>a</code> element).</p>
+            </td>
+          </tr>
+          <tr>
+            <td>trigger</td>
+            <td>string | object</td>
+            <td>{ anchor: 'hover focus', link: 'click' }</td>
+            <td>How anchor tooltips and links are triggered - click | hover | focus | manual. This option should almost always be passed as an object with the respective "anchor" or "link" keys to clarify which trigger applies to which type of element. If this option is passed as a string, it will apply the specified trigger to both anchors and links. You may pass multiple triggers; separate them with a space. </td>
+          </tr>
+          <tr>
+            <td>unique</td>
+            <td>bool</td>
+            <td>true</td>
+            <td><code>@todo Document this</code></td>
+          </tr>
+          <tr>
+            <td>viewport</td>
+            <td>string | object</td>
+            <td>{ selector: 'body', padding: 20 }</td>
+            <td>
+              <p>Keeps the anchor tooltip within the bounds of this element. Example: <code>viewport: '#viewport'</code> or <code>{ "selector": "#viewport", "padding": 0 }</code></p>
+            </td>
+          </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Ignored options</h3>
+      <p>The following inherited Tooltip options are completely ignored by the Anchor plugin.</p>
+      <div class="table-responsive">
+        <table class="table table-bordered table-striped js-options-table">
+          <thead>
+          <tr>
+            <th>Name</th>
+            <th>Reason</th>
+          </tr>
+          </thead>
+          <tbody>
+          <tr>
+            <td>container</td>
+            <td><p>Anchor tooltips are always attached directly to the anchor. This is needed for relative positioning so the anchor tooltip does not disappear.</p></td>
+          </tr>
+          <tr>
+            <td>html</td>
+            <td><p>An anchor tooltip uses an icon for its content. It always inserts the icon option using the <code>$.html()</code> method.</p></td>
+          </tr>
+          <tr>
+            <td>title</td>
+            <td><p>An anchor tooltip uses an icon for its content.</p></td>
+          </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2>Methods</h2>
+
+      <h4 data-generate-prefix="method"><code>$.anchor(options)</code></h4>
+      <p>Attaches a anchor tooltip handler to an element collection.</p>
+
+      <h4 data-generate-prefix="method"><code>$.anchor('show')</code></h4>
+      <p>Reveals an element's anchor tooltip. <strong>Returns to the caller before the anchor tooltip has actually been shown</strong> (i.e. before the <code>shown.bs.anchor</code> event occurs). This is considered a "manual" triggering of the anchor tooltip. Anchors with no <code>id</code> are never displayed.</p>
+      <div class="highlight"><code>$('#element').anchor('show')</code></div>
+
+      <h4 data-generate-prefix="method"><code>$.anchor('hide')</code></h4>
+      <p>Hides an element's anchor tooltip. <strong>Returns to the caller before the anchor tooltip has actually been hidden</strong> (i.e. before the <code>hidden.bs.anchor</code> event occurs). This is considered a "manual" triggering of the anchor tooltip.</p>
+      <div class="highlight"><code>$('#element').anchor('hide')</code></div>
+
+      <h4 data-generate-prefix="method"><code>$.anchor('toggle')</code></h4>
+      <p>Toggles an element's anchor tooltip. <strong>Returns to the caller before the anchor tooltip has actually been shown or hidden</strong> (i.e. before the <code>shown.bs.anchor</code> or <code>hidden.bs.anchor</code> event occurs). This is considered a "manual" triggering of the anchor tooltip.</p>
+      <div class="highlight"><code>$('#element').anchor('toggle')</code></div>
+
+      <h4 data-generate-prefix="method"><code>$.anchor('destroy')</code></h4>
+      <p>Hides and destroys an element's anchor tooltip. Anchor that are delegated (when they are are created using <a href="#options">the <code>selector</code> option</a>) cannot be individually destroyed on descendant trigger elements.</p>
+      <div class="highlight"><code>$('#element').anchor('destroy')</code></div>
+
+      <h4 data-generate-prefix="method"><code>$.anchor('scrollTo')</code></h4>
+      <p><code>@todo Document this</code></p>
+      <div class="highlight"><code>$('#element').anchor('scrollTo')</code></div>
+
+      <h4 data-generate-prefix="method"><code>$.anchor('scrollToHash')</code></h4>
+      <p><code>@todo Document this</code></p>
+      <div class="highlight"><code>$('#element').anchor('scrollToHash')</code></div>
+
+      <h2>Events</h2>
+      <div class="table-responsive">
+        <table class="table table-bordered table-striped bs-events-table">
+          <thead>
+          <tr>
+            <th>Event Type</th>
+            <th>Description</th>
+          </tr>
+          </thead>
+          <tbody>
+          <tr>
+            <td>show.bs.anchor</td>
+            <td>This event fires immediately when the <code>show</code> instance method is called.</td>
+          </tr>
+          <tr>
+            <td>shown.bs.anchor</td>
+            <td>This event is fired when the anchor tooltip has been made visible to the user (will wait for CSS transitions to complete).</td>
+          </tr>
+          <tr>
+            <td>hide.bs.anchor</td>
+            <td>This event is fired immediately when the <code>hide</code> instance method has been called.</td>
+          </tr>
+          <tr>
+            <td>hidden.bs.anchor</td>
+            <td>This event is fired when the anchor tooltip has finished being hidden from the user (will wait for CSS transitions to complete).</td>
+          </tr>
+          <tr>
+            <td>scroll.bs.anchor</td>
+            <td><code>@todo Document this</code></td>
+          </tr>
+          <tr>
+            <td>scrolled.bs.anchor</td>
+            <td><code>@todo Document this</code></td>
+          </tr>
+          </tbody>
+        </table>
+      </div><!-- /.table-responsive -->
+
+
+    </div>
+
+    <div class="col-sm-3" role="complementary">
+      <nav class="bs-docs-sidebar hidden-print hidden-xs hidden-sm affix-top">
+        <ul class="nav bs-docs-sidenav">
+          <li><a href="#example">Example</a></li>
+          <li><a href="#usage">Usage</a>
+            <ul class="nav">
+              <li><a href="#plugin-dependency">Plugin dependency</a></li>
+              <li><a href="#opt-in-functionality">Opt-in functionality</a></li>
+              <li><a href="#excluding-elements">Excluding elements</a></li>
+            </ul>
+          </li>
+          <li><a href="#options">Options</a>
+            <ul class="nav">
+              <li><a href="#ignored-options">Ignored Options</a></li>
+            </ul>
+          </li>
+          <li><a href="#methods">Methods</a>
+            <ul class="nav">
+              <li><a href="#method-anchor-options">$.anchor(options)</a></a></li>
+              <li><a href="#method-anchor-show">$.anchor('show')</a></li>
+              <li><a href="#method-anchor-hide">$.anchor('hide')</a></li>
+              <li><a href="#method-anchor-toggle">$.anchor('toggle')</a></li>
+              <li><a href="#method-anchor-destroy">$.anchor('destroy')</a></li>
+              <li><a href="#method-anchor-scroll-to">$.anchor('scrollTo')</a></li>
+              <li><a href="#method-anchor-scroll-to-hash">$.anchor('scrollToHash')</a></li>
+            </ul>
+          </li>
+          <li><a href="#events">Events</a></li>
+        </ul>
+        <a class="back-to-top" href="#top">Back to top</a>
+      </nav>
+    </div>
+  </div>
+
+</div>
+
+<footer class="bs-docs-footer" role="contentinfo">
+  <div class="container">
+    <div class="bs-docs-social">
+      <ul class="bs-docs-social-buttons">
+        <li>
+          <iframe class="github-btn" src="http://ghbtns.com/github-btn.html?user=markcarver&amp;repo=bootstrap-anchor&amp;type=watch&amp;count=true" width="100" height="20" title="Star on GitHub"></iframe>
+        </li>
+        <li>
+          <iframe class="github-btn" src="http://ghbtns.com/github-btn.html?user=markcarver&amp;repo=bootstrap-anchor&amp;type=fork&amp;count=true" width="102" height="20" title="Fork on GitHub"></iframe>
+        </li>
+        <li class="follow-btn">
+          <a href="https://twitter.com/mark_carver" class="twitter-follow-button" data-show-count="true" data-dnt="true">Follow @mark_carver</a>
+        </li>
+        <li class="tweet-btn">
+          <a href="https://twitter.com/share" class="twitter-share-button" data-url="http://markcarver.github.io/bootstrap-anchor/" data-via="mark_carver" data-related="getbootstrap" data-hashtags="bootstrap @getbootstrap" data-dnt="true">Tweet</a>
+        </li>
+      </ul>
+    </div>
+
+
+    <p>Created for the <a href="https://www.drupal.org/project/bootstrap">Drupal Bootstrap base-theme</a>.</p>
+    <p>Maintained by <a href="https://twitter.com/mark_carver" target="_blank">@mark_carver</a> with the help of <a href="https://www.drupal.org/node/259843/committers">our contributors</a>.</p>
+    <p>Code dual licensed under <a rel="license" href="https://github.com/markcarver/bootstrap-anchor/blob/master/LICENSE" target="_blank">MIT/GPLv2</a>.</p>
+
+    <ul class="bs-docs-footer-links text-muted">
+      <li>Currently v1.0.0</li>
+      <li>·</li>
+      <li><a href="https://github.com/markcarver/bootstrap-anchor">GitHub</a></li>
+      <li>·</li>
+      <li><a href="https://github.com/markcarver/bootstrap-anchor/issues">Issues</a></li>
+      <li>·</li>
+      <li><a href="https://github.com/markcarver/bootstrap-anchor/releases">Releases</a></li>
+    </ul>
+  </div>
+</footer>
+
+<script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.test(d.location)?'http':'https';if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src=p+'://platform.twitter.com/widgets.js';fjs.parentNode.insertBefore(js,fjs);}}(document, 'script', 'twitter-wjs');</script>
 </body>
 </html>

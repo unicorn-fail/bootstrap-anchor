@@ -1,0 +1,56 @@
+{
+  "name": "bootstrap-anchor",
+  "title": "Bootstrap Anchor",
+  "description": "The missing anchor plugin for Bootstrap.",
+  "version": "1.0.0",
+  "keywords": [
+    "bootstrap",
+    "plugin",
+    "anchor",
+    "scroll",
+    "front-end",
+    "web"
+  ],
+  "homepage": "http://markcarver.github.io/bootstrap-anchor/",
+  "author": "Mark Carver",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/markcarver/bootstrap-anchor.git"
+  },
+  "bugs": {
+    "url": "https://github.com/markcarver/bootstrap-anchor/issues"
+  },
+  "license": {
+    "type": "MIT/GLPv2",
+    "url": "https://github.com/markcarver/bootstrap-anchor/blob/master/LICENSE"
+  },
+  "devDependencies": {
+    "bootstrap": "~3.3.4",
+    "jquery": "~1.9.0",
+    "grunt": "~0.4.5",
+    "grunt-banner": "~0.3.1",
+    "grunt-contrib-clean": "~0.6.0",
+    "grunt-contrib-concat": "~0.5.1",
+    "grunt-contrib-csslint": "~0.4.0",
+    "grunt-contrib-cssmin": "~0.12.2",
+    "grunt-contrib-jshint": "~0.11.0",
+    "grunt-contrib-less": "~1.0.0",
+    "grunt-contrib-uglify": "~0.8.0",
+    "grunt-contrib-watch": "~0.6.1",
+    "load-grunt-tasks": "~3.1.0"
+  },
+  "engines": {
+    "node": ">=0.10.1"
+  },
+  "files": [
+    "dist",
+    "src/*.js",
+    "src/*.less",
+    ".editorconfig",
+    ".jshintrc",
+    "Gruntfile.js",
+    "index.html",
+    "LICENSE",
+    "package.json"
+  ]
+}

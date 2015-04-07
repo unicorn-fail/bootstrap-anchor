@@ -1,5 +1,7 @@
-/**
- * Anchor plugin (for Bootstrap).
+/*!
+ * Bootstrap Anchor v1.0.0 (http://markcarver.github.io/bootstrap-anchor/)
+ * Copyright 2015 Mark Carver
+ * Dual licensed under MIT/GLPv2 (https://github.com/markcarver/bootstrap-anchor/blob/master/LICENSE)
  */
 +function ($) {
   'use strict';
@@ -18,25 +20,26 @@
     this.init('anchor', element, options)
   };
 
-  if (!$.fn.tooltip || !$.fn.tooltip.Constructor.VERSION || !($.fn.tooltip.Constructor.VERSION >= "3.3.4")) throw new Error('Anchor requires tooltip.js, version 3.3.4 or greater.')
+  if (!$.fn.tooltip || !$.fn.tooltip.Constructor.VERSION || $.fn.tooltip.Constructor.VERSION < "3.3.4") throw new Error('Anchor requires tooltip.js, version 3.3.4 or greater.')
 
-  Anchor.VERSION  = '3.3.4'
+  Anchor.VERSION  = '1.0.0'
 
   Anchor.DEFAULTS = $.extend({}, $.fn.tooltip.Constructor.DEFAULTS, {
     duration: 300,
     exclude: '[data-anchor-ignore],[data-dismiss],[data-slide],[data-toggle]:not([data-toggle="anchor"])',
     generate: true,
+    generatePrefix: false,
     history: 'append',
     icon: '<span class="glyphicon glyphicon-link" aria-hidden="true"></span>',
     link: 'a[href*="#"],[data-toggle="anchor"]',
     margin: 20,
     normalize: true,
-    onLoad: true,
     onHashchange: true,
+    onLoad: true,
     placement: 'auto left',
     selector: false,
     target: false,
-    template: '<div class="anchor-link" role="tooltip"><a href="#anchor"></a></div>',
+    template: '<div class="anchor-link" role="tooltip"><a href="#"></a></div>',
     trigger: {
       anchor: 'hover focus',
       link: 'click'
@@ -48,10 +51,23 @@
     }
   })
 
+  Anchor.proxy = function (method, constructor) {
+    constructor = constructor || $.fn.tooltip.Constructor
+    return function () {
+      constructor.prototype[method].apply(this.getDelegate.apply(this, arguments), arguments)
+    }
+  }
+
   // NOTE: ANCHOR EXTENDS tooltip.js
   // ================================
 
   Anchor.prototype = $.extend({}, $.fn.tooltip.Constructor.prototype)
+
+  // Proxy the following methods so they are executed with the correct delegate.
+  var methods = ['enter', 'leave', 'hide', 'show', 'toggle']
+  for (var i = 0, l = methods.length; i < l; i++) {
+    Anchor.prototype[methods[i]] = Anchor.proxy(methods[i])
+  }
 
   Anchor.prototype.constructor = Anchor
 
@@ -59,8 +75,17 @@
     return Anchor.DEFAULTS
   }
 
-  Anchor.prototype.hasContent = function () {
-    return this.id && this.$anchor && this.options.icon && this.options.icon.length
+  Anchor.prototype.getOptions = function (options) {
+    options = $.extend({}, this.getDefaults(), options, this.$element.data())
+
+    if (options.delay && typeof options.delay == 'number') {
+      options.delay = {
+        show: options.delay,
+        hide: options.delay
+      }
+    }
+
+    return options
   }
 
   Anchor.prototype.getPosition = function ($element) {
@@ -84,19 +109,23 @@
     return $.fn.tooltip.Constructor.prototype.getPosition.apply(this, [$element])
   }
 
-  Anchor.prototype.setContent = function () {
-    var $tip  = this.tip().removeClass('fade in')
-    $tip.find('a').attr('href', '#' + this.id).html(this.options.icon)
+  Anchor.prototype.hasContent = function () {
+    return this.id && this.$anchor && this.options.icon && this.options.icon.length
   }
 
-  // Proxy the following methods so they are executed with the correct delegate.
-  var methods = ['enter', 'leave', 'hide', 'show', 'toggle']
-  for (var i = 0, l = methods.length; i < l; i++) {
-    (function (method) {
-      Anchor.prototype[method] = function () {
-        $.fn.tooltip.Constructor.prototype[method].apply(this.getDelegate.apply(this, arguments), arguments)
-      }
-    })(methods[i])
+  Anchor.prototype.setContent = function () {
+    var self = this
+    var $tip  = this.tip().removeClass('fade in')
+    $tip.find('a')
+      .attr('href', '#' + this.id)
+      .attr('data-anchor-ignore', 'true')
+      .off('click.bs.' + this.type)
+      .on('click.bs.' + this.type, function (e) {
+        e.preventDefault()
+        e.stopPropagation()
+        self.scrollTo()
+      })
+      .html(this.options.icon)
   }
 
   // ANCHOR CLASS DEFINITION
@@ -113,7 +142,8 @@
     this.link       = this.isLink()
     this.id         = this.getID()
 
-    var bindSelectors = this.getBindSelectors()
+    var bindSelectors = this.getBindSelectors(this.options.selector, '>.' + this.type + '-wrapper')
+    var linkSelectors = this.getBindSelectors(this.options.link)
 
     if (this.dom) {
       if (!bindSelectors || !bindSelectors.length) throw new Error('`selector` option must be specified when initializing ' + this.type + ' on any top level DOM object!')
@@ -131,7 +161,7 @@
       for (var ti = triggersArray.length; ti--;) {
         var trigger = triggersArray[ti]
         if (trigger === 'click') {
-          if (triggerType === 'link') $element.on('click.bs.' + this.type, this.options.link, $.proxy(this.scrollTo, this))
+          if (triggerType === 'link') $element.on('click.bs.' + this.type, linkSelectors, $.proxy(this.scrollTo, this))
           else $element.on('click.bs.' + this.type, bindSelectors, $.proxy(this.toggle, this))
         }
         else if (triggerType !== 'link' && trigger !== 'manual') {
@@ -152,7 +182,10 @@
       }
 
       // Scroll to anchor on page load.
-      if (this.options.onLoad) this.scrollToHash()
+      if (this.options.onLoad) {
+        if (document.readyState === 'complete') this.scrollToHash()
+        else $(window).on('load.bs.' + this.type, $.proxy(this.scrollToHash, this))
+      }
 
       // Scroll to the anchor on hashchange.
       if (this.options.onHashchange) $(window).on('hashchange.bs.' + this.type, $.proxy(this.scrollToHash, this))
@@ -180,7 +213,7 @@
     // Immediately return the anchor is currently already set.
     if (this.$anchor !== null) return this.$anchor || false
 
-    var el = this.$element[0]
+    var $target, el = this.$element[0]
 
     // DOM elements aren't anchors.
     if (this.isDOM()) {
@@ -188,42 +221,41 @@
     }
     // Look for an anchor if the "target" option was set.
     else if (this.options.target) {
-      var $target = $(this.options.target).first()
+      $target = $(this.options.target).first()
       return $target[0] && $target || false
     }
     // Attempt to extract the hash if the element is a link.
     else if (this.isLink()) {
-      var hash = el && this.$element[0].nodeName === 'A' &&
-          // Verify the link goes to an anchor on the same page.
-        el.host === window.location.host &&
-        el.pathname === window.location.pathname &&
-        el.search === window.location.search &&
-        el.hash
+        var hash = el && this.$element[0].nodeName === 'A' &&
+            // Verify the link goes to an anchor on the same page.
+          el.host === window.location.host &&
+          el.pathname === window.location.pathname &&
+          el.search === window.location.search &&
+          el.hash
 
-      // HTML5 specs state that the first element with a matching ID attribute
-      // is to be selected first. If no element is found, the deprecated A
-      // element with a name attribute should be checked instead.
-      // @see http://www.w3.org/html/wg/drafts/html/master/browsers.html#scroll-to-the-fragment-identifier
-      hash = hash && hash.replace(/^#/, '') || hash
-      if (hash && hash.length) {
-        $target = $('#' + hash + ', a[name="' + hash + '"]').first()
-        return $target[0] && $target || false
+        // HTML5 specs state that the first element with a matching ID attribute
+        // is to be selected first. If no element is found, the deprecated A
+        // element with a name attribute should be checked instead.
+        // @see http://www.w3.org/html/wg/drafts/html/master/browsers.html#scroll-to-the-fragment-identifier
+        hash = hash && hash.replace(/^#/, '') || hash
+        if (hash && hash.length) {
+          $target = $('#' + hash + ', a[name="' + hash + '"]').first()
+          return $target[0] && $target || false
+        }
+        return false
       }
-      return false
-    }
     // Otherwise, just return the current element.
     return el && this.$element || false
   }
 
-  Anchor.prototype.getBindSelectors = function () {
-    var selector = this.options.selector && this.options.selector.split(/\s*,\s*(?![^(]*\))/ig) || false
+  Anchor.prototype.getBindSelectors = function (selector, suffix) {
+    selector = selector && selector.split(/\s*,\s*(?![^(]*\))/ig) || false
     if (selector) {
       var selectors = [];
-      var wrapper = this.options.wrapper ? '>.' + this.type + '-wrapper' : ''
       var exclude = this.getExclude()
       exclude = exclude ? ':not(' + exclude + ')' : ''
       for (var si = 0, sl = selector.length; si < sl; si++) {
-        selectors.push(selector[si] + exclude + wrapper)
+        selectors.push(selector[si] + exclude + (suffix ? suffix : ''))
       }
       selector = selectors.join(',')
     }
@@ -235,7 +267,7 @@
     if (obj instanceof this.constructor) return obj
     if (!this.isDOM()) return this
 
-    var $target = $target || obj instanceof jQuery.Event && $(obj.currentTarget) || $()
+    $target = $target || obj instanceof jQuery.Event && $(obj.currentTarget) || $()
 
     // Ensure the original element is the target and not it's wrapper.
     if ($target.is('.' + this.type + '-wrapper')) {
@@ -260,7 +292,8 @@
 
   Anchor.prototype.getID = function (original, force) {
     if (this.isDOM()) {
-      return this.id = this.originalId = false
+      this.id = this.originalId = false
+      return this.id
     }
 
     var dynamic = typeof this.options.id === 'function' || typeof this.options.originalId === 'function'
@@ -296,10 +329,22 @@
       // Extract the ID from the element.
       if (!this.id && !this.link && this.options.generate) {
         this.id = this.$element.text()
-          .replace(/[^._\w\s-]/gi, '')
-          .replace(/_|\s+|\./g, '-')
+          // Replace spaces, underscores, periods, parenthesis, brackets and
+          // curley brackets with hyphens.
+          .replace(/[\s_.()\[\]{}]/g, '-')
+          // Prefix uppercase letters with a hyphen
+          .replace(/[A-Z]/g, function (m) { return '-' + m.toLowerCase() })
+          // Replace consecutive hyphens with just one.
+          .replace(/--+/g, '-')
+          // Remove non alpha-numeric characters.
+          .replace(/[^\w-]/gi, '')
+          // Remove any trailing hyphens.
+          .replace(/^-|-$/g, '')
+          // Lower case the string.
           .toLowerCase()
+          // Limit to 32 characters.
           .substring(0, 32) || false
+        if (this.id && this.options.generatePrefix) this.id = this.options.generatePrefix + '-' + this.id
       }
     }
 
@@ -314,16 +359,16 @@
     return this.id
   }
 
-  Anchor.prototype.getTop = function (margin, padding) {
+  Anchor.prototype.getTop = function () {
+    if (this.$element.css('position') === 'fixed') return this.$element[0].offsetTop
     var pos = this.getPosition(this.$element)
-    var padding = padding || parseInt(this.options.viewport && this.options.viewport.padding || 0, 10) || false
+    var padding = parseInt(this.options.viewport && this.options.viewport.padding || 0, 10) || false
     if (padding === false) {
       padding = parseInt(this.$viewport.css('padding-top'), 10) || false
     }
     var top = pos.top
-    top -= this.options.margin
+    if (this.options.margin) top -= this.options.margin
     if (padding !== false) top -= padding
-    if (margin !== false) top -= margin || parseInt(this.$viewport.css('margin-top'), 10) || 0
     return top < 0 ? 0 : top
   }
 
@@ -342,9 +387,10 @@
 
   Anchor.prototype.getUID = function (prefix) {
     var i = 0
+    var original = prefix
     while (document.getElementById(prefix)) {
       i++
-      prefix = prefix + '-' + i
+      prefix = original + '-' + i
     }
     return prefix
   }
@@ -360,9 +406,9 @@
     // document, window, "html" or "body".
     var el = this.$element[0]
     return (el && (el instanceof document.constructor
-      || el instanceof window.constructor
-      || el instanceof HTMLHtmlElement
-      || el instanceof HTMLBodyElement
+    || el instanceof window.constructor
+    || el instanceof HTMLHtmlElement
+    || el instanceof HTMLBodyElement
     ))
   }
 
@@ -376,7 +422,11 @@
     var self = this;
     var delegate = self.getDelegate.apply(self, arguments)
 
-    // Return immediately if there is no anchor, its disabled or currently scrolling.
+    var e = $.Event('scroll.bs.' + delegate.type)
+    if (e.isDefaultPrevented()) return
+
+    // Return immediately if the event was prevented, there is no valid anchor,
+    // its disabled or its currently scrolling.
     if (!delegate.$anchor || !delegate.enabled || self.scrolling) {
       // Prevent default behavior for links if an event was passed.
       if (delegate.link && event) {
@@ -386,20 +436,16 @@
       }
     }
 
-    // Handle links separately.
+    // Proxy any scrolling to the actual anchor element in case there are
+    // data attributes that override desired functionality.
     if (delegate.link) {
       // Prevent default behavior for links if an event was passed.
       event && event.preventDefault()
 
-      // Proxy the scrolling to the actual anchor element in case there are
-      // data attributes that override desired functionality.
       delegate.$element.trigger('blur.bs.' + delegate.type)
       self.scrollTo.apply(self, [null, delegate.$anchor])
       return
     }
-
-    var e = $.Event('scroll.bs.' + delegate.type)
-    if (e.isDefaultPrevented()) return
 
     var top = delegate.getTop()
     var scroll = $.Deferred()
@@ -428,11 +474,11 @@
   }
 
   Anchor.prototype.scrollToHash = function (hash) {
-    // Return immediately if currently scrolling.
-    if (this.scrolling) return
+    // Return immediately if its disabled or currently scrolling.
+    if (!this.enabled || this.scrolling) return
 
     // Return to the previously recorded scrolltop (to prevent immediate an jump).
-    this.$viewport.scrollTop(this.scrollTop)
+    if (document.readyState === 'complete' && this.scrollTop !== null) this.$viewport.scrollTop(this.scrollTop)
 
     // Use the provided hash or the window's current hash.
     hash = hash && typeof hash === 'string' && hash.replace(/^#/, '') || window.location.hash.replace(/^#/, '')
