@@ -11,6 +11,10 @@ module.exports = function (grunt) {
   // Force use of Unix newlines
   grunt.util.linefeed = '\n';
 
+  RegExp.quote = function (string) {
+    return string.replace(/[-\\^$*+?.()|[\]{}]/g, '\\$&');
+  };
+
   // Project configuration.
   grunt.initConfig({
 
@@ -24,18 +28,40 @@ module.exports = function (grunt) {
 
     // Task configuration.
     clean: {
-      dist: 'dist'
+      dist: 'dist',
+      docs: 'docs/dist'
     },
 
     jshint: {
       options: {
-        jshintrc: '.jshintrc'
-      },
-      grunt: {
-        src: ['Gruntfile.js']
+        jshintrc: 'js/.jshintrc'
       },
       core: {
-        src: 'src/*.js'
+        src: 'js/*.js'
+      },
+      assets: {
+        src: ['docs/assets/js/src/*.js', 'docs/assets/js/*.js', '!docs/assets/js/*.min.js']
+      }
+    },
+
+    jscs: {
+      options: {
+        config: 'js/.jscsrc'
+      },
+      grunt: {
+        src: '<%= jshint.grunt.src %>'
+      },
+      core: {
+        src: '<%= jshint.core.src %>'
+      },
+      test: {
+        src: '<%= jshint.test.src %>'
+      },
+      assets: {
+        options: {
+          requireCamelCaseOrUpperCaseIdentifiers: null
+        },
+        src: '<%= jshint.assets.src %>'
       }
     },
 
@@ -45,19 +71,28 @@ module.exports = function (grunt) {
         stripBanners: false
       },
       bootstrap: {
-        src: 'src/anchor.js',
-        dest: 'dist/<%= pkg.name %>.js'
+        src: [
+          'js/anchor.js'
+        ],
+        dest: 'dist/js/<%= pkg.name %>.js'
       }
     },
 
     uglify: {
       options: {
-        preserveComments: 'some',
-        report: 'gzip'
+        compress: {
+          warnings: false
+        },
+        mangle: true,
+        preserveComments: 'some'
       },
       core: {
         src: '<%= concat.bootstrap.dest %>',
-        dest: 'dist/<%= pkg.name %>.min.js'
+        dest: 'dist/js/<%= pkg.name %>.min.js'
+      },
+      docsJs: {
+        src: ["docs/assets/js/src/application.js"],
+        dest: 'docs/assets/js/docs.min.js'
       }
     },
 
@@ -68,22 +103,70 @@ module.exports = function (grunt) {
           sourceMap: true,
           outputSourceFiles: true,
           sourceMapURL: '<%= pkg.name %>.css.map',
-          sourceMapFilename: 'dist/<%= pkg.name %>.css.map'
+          sourceMapFilename: 'dist/css/<%= pkg.name %>.css.map'
         },
-        src: 'src/anchor.less',
-        dest: 'dist/<%= pkg.name %>.css'
+        src: 'less/anchor.less',
+        dest: 'dist/css/<%= pkg.name %>.css'
+      }
+    },
+
+    autoprefixer: {
+      options: {
+        browsers: [
+          "Android 2.3",
+          "Android >= 4",
+          "Chrome >= 20",
+          "Firefox >= 24",
+          "Explorer >= 8",
+          "iOS >= 6",
+          "Opera >= 12",
+          "Safari >= 6"
+        ]
+      },
+      core: {
+        options: {
+          map: true
+        },
+        src: 'dist/css/<%= pkg.name %>.css'
+      },
+      docs: {
+        src: ['docs/assets/css/src/docs.css']
+      }
+    },
+
+    csslint: {
+      options: {
+        csslintrc: 'less/.csslintrc'
+      },
+      dist: [
+        'dist/css/<%= pkg.name %>.css',
+      ],
+      docs: {
+        options: {
+          ids: false,
+          'overqualified-elements': false
+        },
+        src: 'docs/assets/css/src/docs.css'
       }
     },
 
     cssmin: {
       options: {
+        // TODO: disable `zeroUnits` optimization once clean-css 3.2 is released
+        //    and then simplify the fix for https://github.com/twbs/bootstrap/issues/14837 accordingly
         compatibility: 'ie8',
         keepSpecialComments: '*',
         advanced: false
       },
       minifyCore: {
-        src: 'dist/<%= pkg.name %>.css',
-        dest: 'dist/<%= pkg.name %>.min.css'
+        src: 'dist/css/<%= pkg.name %>.css',
+        dest: 'dist/css/<%= pkg.name %>.min.css'
+      },
+      docs: {
+        src: [
+          'docs/assets/css/src/docs.css'
+        ],
+        dest: 'docs/assets/css/docs.min.css'
       }
     },
 
@@ -93,8 +176,87 @@ module.exports = function (grunt) {
         banner: '<%= banner %>'
       },
       files: {
-        src: 'dist/*.css'
+        src: 'dist/css/*.css'
       }
+    },
+
+    csscomb: {
+      options: {
+        config: 'less/.csscomb.json'
+      },
+      dist: {
+        expand: true,
+        cwd: 'dist/css/',
+        src: ['*.css', '!*.min.css'],
+        dest: 'dist/css/'
+      },
+      docs: {
+        src: 'docs/assets/css/src/docs.css',
+        dest: 'docs/assets/css/src/docs.css'
+      }
+    },
+
+    copy: {
+      docs: {
+        expand: true,
+        cwd: 'dist/',
+        src: [
+          '**/*'
+        ],
+        dest: 'docs/dist/'
+      }
+    },
+
+    connect: {
+      server: {
+        options: {
+          port: 3000,
+          base: '.'
+        }
+      }
+    },
+
+    jekyll: {
+      options: {
+        config: '_config.yml'
+      },
+      docs: {},
+      github: {
+        options: {
+          raw: 'github: true'
+        }
+      }
+    },
+
+    htmlmin: {
+      dist: {
+        options: {
+          collapseWhitespace: true,
+          conservativeCollapse: true,
+          minifyCSS: true,
+          minifyJS: true,
+          removeAttributeQuotes: true,
+          removeComments: true
+        },
+        expand: true,
+        cwd: '_gh_pages',
+        dest: '_gh_pages',
+        src: [
+          '**/*.html',
+          '!examples/**/*.html'
+        ]
+      }
+    },
+
+    htmllint: {
+      options: {
+        ignore: [
+          'Attribute "autocomplete" not allowed on element "button" at this point.',
+          'Attribute "autocomplete" not allowed on element "input" at this point.',
+          'Element "img" is missing required attribute "src".'
+        ]
+      },
+      src: '_gh_pages/**/*.html'
     },
 
     watch: {
@@ -105,6 +267,36 @@ module.exports = function (grunt) {
       less: {
         files: 'src/*.less',
         tasks: 'dist'
+      }
+    },
+
+    sed: {
+      versionNumber: {
+        pattern: (function () {
+          var old = grunt.option('oldver');
+          return old ? RegExp.quote(old) : old;
+        })(),
+        replacement: grunt.option('newver'),
+        recursive: true
+      }
+    },
+
+    compress: {
+      main: {
+        options: {
+          archive: '<%= pkg.name %>-<%= pkg.version %>-dist.zip',
+          mode: 'zip',
+          level: 9,
+          pretty: true
+        },
+        files: [
+          {
+            expand: true,
+            cwd: 'dist/',
+            src: ['**'],
+            dest: '<%= pkg.name %>-<%= pkg.version %>-dist'
+          }
+        ]
       }
     }
 
@@ -118,12 +310,29 @@ module.exports = function (grunt) {
 
   // CSS distribution task.
   grunt.registerTask('less-compile', ['less:compileCore']);
-  grunt.registerTask('dist-css', ['less-compile', 'usebanner', 'cssmin:minifyCore']);
+  grunt.registerTask('dist-css', ['less-compile', 'autoprefixer:core', 'usebanner', 'csscomb:dist', 'cssmin:minifyCore']);
 
   // Full distribution task.
   grunt.registerTask('dist', ['clean:dist', 'dist-css', 'dist-js']);
 
   // Default task.
   grunt.registerTask('default', ['dist']);
+
+  // Version numbering task.
+  // grunt change-version-number --oldver=A.B.C --newver=X.Y.Z
+  // This can be overzealous, so its changes should always be manually reviewed!
+  grunt.registerTask('change-version-number', 'sed');
+
+  // Docs HTML validation task
+  grunt.registerTask('validate-html', ['jekyll:docs', 'htmllint']);
+
+  // Docs task.
+  grunt.registerTask('docs-css', ['autoprefixer:docs', 'csscomb:docs', 'cssmin:docs']);
+  grunt.registerTask('lint-docs-css', ['csslint:docs']);
+  grunt.registerTask('docs-js', ['uglify:docsJs']);
+  grunt.registerTask('lint-docs-js', ['jshint:assets', 'jscs:assets']);
+  grunt.registerTask('docs', ['docs-css', 'lint-docs-css', 'docs-js', 'lint-docs-js', 'clean:docs', 'copy:docs']);
+
+  grunt.registerTask('prep-release', ['jekyll:github', 'htmlmin', 'compress']);
 
 };

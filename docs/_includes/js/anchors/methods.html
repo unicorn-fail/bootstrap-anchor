@@ -1,0 +1,29 @@
+<div class="bs-docs-section">
+
+  <h2>Methods</h2>
+  <div data-anchor-container="true" data-anchor-prefix-id="method">
+    <h4><code>$.anchor(options)</code></h4>
+    <p>Attaches a anchor tooltip handler to an element collection.</p>
+
+    <h4><code>$.anchor('show')</code></h4>
+    <p>Reveals an element's anchor tooltip. <strong>Returns to the caller before the anchor tooltip has actually been shown</strong> (i.e. before the <code>shown.bs.anchor</code> event occurs). This is considered a "manual" triggering of the anchor tooltip. Anchors with no <code>id</code> are never displayed.</p>
+    <div class="highlight"><pre><code><span class="nx">$</span><span class="p">(</span><span class="s1">'#element'</span><span class="p">).</span><span class="nx">anchor</span><span class="p">(</span><span class="s1">'show'</span><span class="p">)</span></code></pre></div>
+
+    <h4><code>$.anchor('hide')</code></h4>
+    <p>Hides an element's anchor tooltip. <strong>Returns to the caller before the anchor tooltip has actually been hidden</strong> (i.e. before the <code>hidden.bs.anchor</code> event occurs). This is considered a "manual" triggering of the anchor tooltip.</p>
+    <div class="highlight"><pre><code><span class="nx">$</span><span class="p">(</span><span class="s1">'#element'</span><span class="p">).</span><span class="nx">anchor</span><span class="p">(</span><span class="s1">'hide'</span><span class="p">)</span></code></pre></div>
+
+    <h4><code>$.anchor('toggle')</code></h4>
+    <p>Toggles an element's anchor tooltip. <strong>Returns to the caller before the anchor tooltip has actually been shown or hidden</strong> (i.e. before the <code>shown.bs.anchor</code> or <code>hidden.bs.anchor</code> event occurs). This is considered a "manual" triggering of the anchor tooltip.</p>
+    <div class="highlight"><pre><code><span class="nx">$</span><span class="p">(</span><span class="s1">'#element'</span><span class="p">).</span><span class="nx">anchor</span><span class="p">(</span><span class="s1">'toggle'</span><span class="p">)</span></code></pre></div>
+
+    <h4><code>$.anchor('destroy')</code></h4>
+    <p>Hides and destroys an element's anchor tooltip. Anchor that are delegated (when they are are created using <a href="#options">the <code>selector</code> option</a>) cannot be individually destroyed on descendant trigger elements.</p>
+    <div class="highlight"><pre><code><span class="nx">$</span><span class="p">(</span><span class="s1">'#element'</span><span class="p">).</span><span class="nx">anchor</span><span class="p">(</span><span class="s1">'destroy'</span><span class="p">)</span></code></pre></div>
+
+    <h4><code>$.anchor('scrollTo')</code></h4>
+    <p><code>@todo Document this</code></p>
+    <div class="highlight"><pre><code><span class="nx">$</span><span class="p">(</span><span class="s1">'#element'</span><span class="p">).</span><span class="nx">anchor</span><span class="p">(</span><span class="s1">'scrollTo'</span><span class="p">)</span></code></pre></div>
+  </div>
+
+</div>

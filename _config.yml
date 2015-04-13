@@ -1,0 +1,24 @@
+# Dependencies
+markdown:         kramdown
+highlighter:      rouge
+
+# Permalinks
+permalink:        pretty
+
+# Server
+source:           docs
+destination:      _gh_pages
+host:             0.0.0.0
+port:             9001
+url:              http://markcarver.github.io/bootstrap-anchor/
+encoding:         UTF-8
+
+# Custom vars
+name:             Bootstrap Anchor
+description:      The missing Bootstrap plugin for anchor support.
+current_version:  0.0.1
+repo:             https://github.com/markcarver/bootstrap-anchor
+
+download:
+  source:         https://github.com/markcarver/bootstrap-anchor/archive/v0.0.1.zip
+  dist:           https://github.com/markcarver/bootstrap-anchor/releases/download/v0.0.1/bootstrap-anchor-0.0.1-dist.zip

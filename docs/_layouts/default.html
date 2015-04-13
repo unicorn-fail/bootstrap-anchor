@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <!-- Meta, title, CSS, favicons, etc. -->
+    {% include header.html %}
+  </head>
+  <body class="navbar-fixed" data-spy="scroll" data-offset="81">
+    <a id="skippy" class="sr-only sr-only-focusable" href="#content"><div class="container"><span class="skiplink-text">Skip to main content</span></div></a>
+
+    <!-- Docs master nav -->
+    {% include nav/main.html %}
+
+    <!-- Docs page layout -->
+    <main class="bs-docs-masthead" id="content" role="main" tabindex="-1">
+      <div class="container">
+        <span class="bs-docs-booticon bs-docs-booticon-lg bs-docs-booticon-outline"></span>
+        <p class="lead">{{ site.description }}</p>
+        <p class="lead">
+          <a href="#download" class="btn btn-outline-inverse btn-lg" onclick="ga('send', 'event', 'Jumbotron actions', 'Download', 'Download {{ site.current_version }}');">Download Bootstrap Anchor</a>
+        </p>
+        <p>Currently v{{ site.current_version }}</p>
+      </div>
+    </main>
+
+    <div class="container bs-docs-container">
+
+      <div class="row">
+        <div class="col-md-9" role="main">
+          <br>
+          <div class="alert alert-danger">This plugin and documentation is currently under development. Please ignore any missing or contradicting information!</div>
+          {{ content }}
+        </div>
+        <div class="col-md-3" role="complementary">
+          <nav class="bs-docs-sidebar hidden-print hidden-xs hidden-sm">
+            <ul class="nav bs-docs-sidenav">
+              {% include nav/sidebar.html %}
+            </ul>
+            <a class="back-to-top" href="#top">
+              Back to top
+            </a>
+          </nav>
+        </div>
+      </div>
+    </div>
+
+    {% include footer.html %}
+  </body>
+</html>

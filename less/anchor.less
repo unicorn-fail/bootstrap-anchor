@@ -1,0 +1,45 @@
+@import "../node_modules/bootstrap/less/variables";
+@import "../node_modules/bootstrap/less/mixins";
+
+@anchor-color: @gray-dark;
+@anchor-hover-color: @link-color;
+@anchor-font-size: 1em;
+@anchor-heading-font-size: (@anchor-font-size - .25em);
+@anchor-opacity: .35;
+@anchor-padding: .25em;
+
+.anchor-wrapper {
+  position: relative;
+  code &, kbd & {
+    margin: -2px -4px;
+    padding: 2px 4px;
+  }
+}
+
+.anchor-link {
+  display: block;
+  font-size: @anchor-font-size;
+  min-width: 1.25em;
+  position: absolute;
+
+  h1 &, h2 &, h3 &, h4 &, h5 &, h6 & {
+    font-size: @anchor-heading-font-size;
+  }
+
+  &.fade a {
+    transition: color 300ms ease-in-out, opacity 300ms ease-in-out;
+  }
+
+  a {
+    .opacity(@anchor-opacity);
+    color: @anchor-color;
+    padding: @anchor-padding;
+    text-decoration: none;
+
+    &:hover {
+      .opacity(1);
+      color: @anchor-hover-color;
+      text-decoration: none;
+    }
+  }
+}

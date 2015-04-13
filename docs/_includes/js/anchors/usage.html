@@ -1,0 +1,43 @@
+<div class="bs-docs-section">
+  <h2>Usage</h2>
+  <p>The anchor plugin generates content and markup on demand, and places anchor tooltips inside their trigger element.</p>
+  <p>There are two ways to initialize the anchor plugin via JavaScript.</p>
+
+  <p>The <strong>highly recommended method</strong> is to bind the plugin directly to <code>document</code>:</p>
+{%highlight js %}
++function ($) {
+  $(document).anchor()
+}(jQuery)
+{% endhighlight %}
+
+  <p>The <strong>alternative or manual method</strong> is to invoke the plugin based on a set of selectors:</p>
+{%highlight js %}
++function ($) {
+  $(document).ready(function () {
+    // Initialize anchors on select elements.
+    $('h1.page-header, .anchor').anchor()
+  })
+}(jQuery)
+{% endhighlight %}
+
+
+  <div class="bs-callout bs-callout-danger">
+    <h4>Plugin dependency</h4>
+    <p>Anchors require the <a href="http://getbootstrap.com/javascript/#tooltips">tooltip plugin</a> to be included in your version of Bootstrap.</p>
+  </div>
+  <div class="bs-callout bs-callout-danger">
+    <h4>Opt-in functionality</h4>
+    <p>For performance reasons, the Tooltip, Popover and Anchor data-apis are opt-in, meaning <strong>you must initialize them yourself</strong>.</p>
+  </div>
+  <div class="bs-callout bs-callout-info">
+    <h4>Document Binding</h4>
+    <p>It is not necessary to instantiate the plugin inside a <a href="https://api.jquery.com/ready/">$.ready()</a> wrapper when binding to the <code>document</code>. The plugin will automatically do this for you, if necessary.</p>
+    <p>If needed, for code sanity, the plugin can alternatively be bound to <code>window</code>, <code>'html'</code> or <code>'body'</code>. The plugin considers these top level DOM elements and will reset to always bind <code>document</code>.</p>
+  </div>
+  <div class="bs-callout bs-callout-info">
+    <h4>Excluding elements</h4>
+    <p>If automatically binding to the DOM, any elements that match the <code>exclude</code> <a href="#options">option</a> will always be ignored. This applies to both anchors and anchor links. This option can be disabled by passing an empty string or <code>false</code>.</p>
+    <p>If manually instantiating anchors or anchor links, you must also manually filter the returned elements (usually with <code>.not()</code>) before continuing to instantiate the plugin.</p>
+  </div>
+
+</div>
