@@ -10,7 +10,8 @@ source:           docs
 destination:      _gh_pages
 host:             0.0.0.0
 port:             9001
-url:              http://markcarver.github.io/bootstrap-anchor/
+url:              http://markcarver.github.io/bootstrap-anchor
+baseurl:          /bootstrap-anchor
 encoding:         UTF-8
 
 # Custom vars

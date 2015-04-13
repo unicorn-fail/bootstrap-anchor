@@ -31,15 +31,15 @@
 <script src="http://cdn.jsdelivr.net/zeroclipboard/1.3.5/ZeroClipboard.js"></script>
 
 {% if site.github %}
-<script src="./dist/js/bootstrap-anchor.min.js"></script>
+<script src="{{ site.baseurl }}/dist/js/bootstrap-anchor.min.js"></script>
 {% else %}
-<script src="./dist/js/bootstrap-anchor.js"></script>
+<script src="{{ site.baseurl }}/dist/js/bootstrap-anchor.js"></script>
 {% endif %}
 
 {% if site.github %}
-  <script src="../assets/js/docs.min.js"></script>
+  <script src="{{ site.baseurl }}/assets/js/docs.min.js"></script>
 {% else %}
-  <script src="../assets/js/src/application.js"></script>
+  <script src="{{ site.baseurl }}/assets/js/src/application.js"></script>
 {% endif %}
 
 {% comment %}
