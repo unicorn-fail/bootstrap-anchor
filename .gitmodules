@@ -1,0 +1,4 @@
+[submodule "_gh_pages"]
+	path = _gh_pages
+	url = git@github.com:markcarver/bootstrap-anchor.git
+	branch = gh-pages
