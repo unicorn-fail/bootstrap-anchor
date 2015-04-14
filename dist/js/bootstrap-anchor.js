@@ -354,21 +354,18 @@
   }
 
   Anchor.prototype.getContainer = function () {
-    var self = this;
-    var instance = self.getInstance.apply(self, arguments)
-
-    if (!instance.hasContent() || !instance.$anchor) return instance.$element
-    if (instance.$container) return instance.$container
-    instance.$container = instance.$anchor.find('>.' + instance.type + '-wrapper')
-    if (instance.$container[0]) return instance.$container
+    if (this.dom || this.link || !this.hasContent() || !this.$anchor) return this.$element
+    if (this.$container) return this.$container
+    this.$container = this.$anchor.find('>.' + this.type + '-wrapper')
+    if (this.$container[0]) return this.$container
     // For performance purposes, use native JS to wrap instead of $.wrapInner().
-    var anchor = instance.$anchor[0]
+    var anchor = this.$anchor[0]
     var wrapper = document.createElement('span')
     wrapper.className = 'anchor-wrapper'
     while (anchor.childNodes.length) wrapper.appendChild(anchor.removeChild(anchor.childNodes[0]))
     anchor.insertBefore(wrapper, anchor.firstChild)
-    instance.$container = $(wrapper)
-    return instance.$container
+    this.$container = $(wrapper)
+    return this.$container
   }
 
   Anchor.prototype.getInstance = function (obj, $target) {
@@ -405,31 +402,25 @@
   }
 
   Anchor.prototype.getID = function (force) {
-    var self = this;
-    var instance = self.getInstance.apply(self, arguments)
+    if (this.dom || this.link) return (this.id = this.originalId = false)
 
-    if (instance.dom) {
-      instance.id = instance.originalId = false
-      return instance.id
-    }
+    var dynamic = typeof this.options.id === 'function' || typeof this.options.originalId === 'function'
+    if (this.id !== null && !dynamic && !force) return this.id
 
-    var dynamic = typeof instance.options.id === 'function' || typeof instance.options.originalId === 'function'
-    if (instance.id !== null && !dynamic && !force) return instance.id
+    this.originalId = typeof this.options.originalId === 'function' && this.options.originalId.call(this) || this.options.originalId || false
+    this.id = typeof this.options.id === 'function' && this.options.id.call(this) || this.options.id || this.originalId || false
 
-    instance.originalId = typeof instance.options.originalId === 'function' && instance.options.originalId.call(instance) || instance.options.originalId || false
-    instance.id = typeof instance.options.id === 'function' && instance.options.id.call(instance) || instance.options.id || instance.originalId || false
-
-    if (!instance.id && instance.$anchor && instance.$anchor[0]) {
-      var el = instance.$anchor[0]
+    if (!this.id && this.$anchor && this.$anchor[0]) {
+      var el = this.$anchor[0]
 
       // Attempt to retrieve the ID from the element.
       var id = el && el.id || el && el.nodeName === 'A' && el.name
 
       // Attempt to find an adjoining named A tag, if element isn't already one.
-      if (!id && instance.options.anchorFindNamed) {
+      if (!id && this.options.anchorFindNamed) {
         var $named, traverse = ['next', 'prev', 'find']
         for (var i = traverse.length; i--;) {
-          $named = instance.$anchor[traverse[i]]('a[name]:empty')
+          $named = this.$anchor[traverse[i]]('a[name]:empty')
           if ($named[0] && !id) { // Don't override existing ID
             id = $named[0].id || $named[0].name
             break
@@ -438,35 +429,31 @@
       }
 
       // Remove attributes.
-      if (id) instance.$anchor.removeAttr('id')
-      if (el && el.nodeName === 'A' && el.name) instance.$anchor.removeAttr('name')
+      if (id) el.removeAttribute('id')
+      if (el && el.nodeName === 'A' && el.name) el.name = '' && el.removeAttribute('name')
 
       // Save the original ID.
-      instance.id = instance.originalId = id || false
+      this.id = this.originalId = id || false
 
       // If still no ID, attempt to auto-generate one from the anchor's text.
-      if (!instance.id && instance.options.anchorGenerateId && !instance.isLink()) {
-        instance.id = instance.$anchor.text() || false
-        if (instance.id) {
-          if (instance.options.anchorNormalizeId) instance.id = instance.normalizeId(instance.id)
-          if (instance.options.anchorPrefixId) instance.id = instance.options.anchorPrefixId + '-' + instance.id
-          if (instance.options.anchorUniqueId) instance.id = instance.getUID(instance.id)
+      if (!this.id && this.options.anchorGenerateId && !this.link) {
+        this.id = el.textContent || el.innerText || false
+        if (this.id) {
+          if (this.options.anchorNormalizeId) this.id = this.normalizeId(this.id)
+          if (this.options.anchorPrefixId) this.id = this.options.anchorPrefixId + '-' + this.id
+          if (this.options.anchorUniqueId) this.id = this.getUID(this.id)
         }
       }
 
       // Ensure the original ID is stored on the element.
-      instance.$anchor.attr('data-original-id', instance.originalId.toString())
+      el.setAttribute('data-original-id', this.originalId.toString())
 
-      if (instance.id) {
-        instance.$anchor
-          .attr('id', instance.id)
-          .attr('data-id', instance.id)
-      }
+      if (this.id) el.setAttribute('id', this.id) && el.setAttribute('data-id', this.id)
     }
 
-    if (instance.id !== instance.originalId && instance.$anchor) instance.$anchor.trigger('change.bs.anchor', instance)
+    if (this.id !== this.originalId && this.$anchor) this.$anchor.trigger('change.bs.anchor', this)
 
-    return instance.id
+    return this.id
   }
 
   Anchor.prototype.getTop = function () {
@@ -603,6 +590,11 @@
       })
 
     scroll.resolve()
+  }
+
+  Anchor.prototype.setOption = function (option, value) {
+    if (typeof option === 'object') this.options = $.extend(true, {}, this.options, option)
+    else this.options[option] = value
   }
 
   // ANCHOR PLUGIN DEFINITION
