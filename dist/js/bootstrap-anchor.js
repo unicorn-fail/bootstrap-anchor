@@ -11,7 +11,7 @@
   // ANCHOR PUBLIC CLASS DEFINITION
   // ====================
 
-  var Anchor = function (element, options, selector) {
+  var Anchor = function () {
     this.$anchor    = null
     this.$container = null
     this.$delegates = null
@@ -22,7 +22,7 @@
     this.originalId = null
     this.scrollTop  = null
     this.scrolling  = null
-    this.init('anchor', element, options, selector)
+    this.init.apply(this, arguments)
   }
 
   Anchor.VERSION    = '0.0.1'
@@ -45,7 +45,7 @@
   Anchor.proxy = function (method, constructor) {
     constructor = constructor || Tooltip
     return function () {
-      constructor.prototype[method].apply(this.getDelegate.apply(this, arguments), arguments)
+      constructor.prototype[method].apply(this.getInstance.apply(this, arguments), arguments)
     }
   }
 
@@ -98,7 +98,7 @@
 
   Anchor.prototype = $.extend({}, Tooltip.prototype)
 
-  // Proxy the following methods so they are executed with the correct delegate.
+  // Proxy the following methods so they are executed with the correct delegated instance.
   var methods = ['enter', 'leave', 'hide', 'show', 'toggle']
   for (var i = 0, l = methods.length; i < l; i++) {
     Anchor.prototype[methods[i]] = Anchor.proxy(methods[i])
@@ -124,10 +124,10 @@
 
     // Look for an anchor container that overrides any default options.
     var container = !this.dom && defaults.anchorContainer
-    if (data.anchorContainer !== undefined) {
+    if (data && data.anchorContainer !== undefined) {
       container = data.anchorContainer || null
     }
-    else if (options.anchorContainer !== undefined) {
+    else if (options && options.anchorContainer !== undefined) {
       container = options.anchorContainer || null
     }
 
@@ -138,6 +138,8 @@
     }
 
     options = $.extend(true, {}, defaults, selector, options, container, data)
+
+    if (options['bs.anchor']) delete options['bs.anchor']
 
     if (options.delay && typeof options.delay == 'number') {
       options.delay = {
@@ -191,14 +193,14 @@
   // ANCHOR CLASS DEFINITION
   // ====================
 
-  Anchor.prototype.init = function (type, element, options, selector) {
+  Anchor.prototype.init = function (element, options, selector) {
     // Immediately return if instance has already been initialized.
     if (this.enabled !== null) return
 
     var self = this
 
     this.enabled    = true
-    this.type       = type
+    this.type       = 'anchor'
     this.dom        = this.isDOM(element)
     this.$element   = this.dom ? $(document) : $(element)
     this.options    = this.getOptions(options, selector)
@@ -208,8 +210,56 @@
     this.link       = this.isLink()
     this.id         = this.getID()
 
+    if (this.dom && !this.options.anchors && !this.options.anchorLinks) throw new Error('`anchors` or `anchorLinks` option must be specified when initializing ' + this.type + ' on any top level DOM object!')
+
+    var exclude = this.getExclude()
+
     // Create any necessary bindings.
-    this.bind()
+    if (this.dom || this.link || this.hasContent()) {
+      var $element = self.dom || !exclude ? self.$element : self.$element.not(exclude)
+
+      // Construct the necessary selectors to delegate, if any.
+      var selectors = function (type) {
+        var wrapper = (type === 'anchors' ? '> .' + self.type + '-wrapper' : '')
+        var selectors = type === 'anchors' && self.options.anchors || type === 'links' && self.options.anchorLinks || ''
+        if (!self.dom) return wrapper || null
+        var bind = function (callback) {
+          var _selectors = selectors && selectors.split(/\s*,\s*(?![^(]*\))/ig) || []
+          for (var i = 0, l = _selectors.length; i < l; i++) {
+            _selectors[i] = callback.apply(self, [_selectors[i], _selectors])
+          }
+          return _selectors.join(',')
+        }
+        return bind(function (selector) { return selector + ':not(' + exclude + ')' + wrapper })
+      }
+
+      var anchorLinkClick = function (e) {
+        e.preventDefault()
+        e.stopPropagation()
+        var instance = this.getInstance.apply(this, arguments)
+        instance.scrollTo()
+      }
+
+      var triggerTypes = this.getTriggers()
+      for (var type in triggerTypes) {
+        if (!triggerTypes.hasOwnProperty(type)) continue
+
+        var delegated = selectors(type)
+        var triggers = typeof triggerTypes[type] === 'string' && triggerTypes[type].split(' ') || []
+        for (var i = triggers.length; i--;) {
+
+          var trigger = triggers[i]
+          if (trigger === 'click') {
+            if (type === 'links' && (this.dom || this.link)) $element.on('click.bs.' + this.type, delegated, $.proxy(anchorLinkClick, this))
+            else $element.on('click.bs.' + this.type, delegated, $.proxy(this.toggle, this))
+          }
+          else if (type === 'anchors' && trigger !== 'manual') {
+            $element.on((trigger === 'hover' ? 'mouseenter' : 'focusin') + '.bs.' + this.type, delegated, $.proxy(this.enter, this))
+            $element.on((trigger === 'hover' ? 'mouseleave' : 'focusout') + '.bs.' + this.type, delegated, $.proxy(this.leave, this))
+          }
+        }
+      }
+    }
 
     // DOM binding.
     if (this.dom) {
@@ -221,11 +271,24 @@
         self.scrollTop = self.getPosition(self.$viewport).scroll
       })
 
+      var scrollToHash = function () {
+        // Return immediately if its disabled or currently scrolling.
+        if (!self.enabled || self.scrolling) return
+
+        // Return to the previously recorded scrolltop (to prevent immediate an jump).
+        if (document.readyState === 'complete' && self.scrollTop !== null) self.$viewport.scrollTop(self.scrollTop)
+
+        // Find the hash's target anchor and then scroll to it.
+        var hash = window.location.hash.replace(/^#/, '')
+        var target = hash && document.getElementById(hash) || document.getElementsByName(hash)
+        if (target) $(target).anchor('scrollTo')
+      }
+
       // Scroll to anchor on page load.
-      if (this.options.scrollOnLoad) $window.on('load.bs.' + this.type, $.proxy(this.scrollToHash, this))
+      if (this.options.scrollOnLoad) $window.on('load.bs.' + this.type, scrollToHash)
 
       // Scroll to the anchor on hashchange.
-      if (this.options.scrollOnHashchange) $window.on('hashchange.bs.' + this.type, $.proxy(this.scrollToHash, this))
+      if (this.options.scrollOnHashchange) $window.on('hashchange.bs.' + this.type, scrollToHash)
 
       // Refresh scrollspy plugins when an anchor ID change has been fired.
       if ($.fn.scrollspy) this.$element.on('change.bs.anchor', function () {
@@ -235,7 +298,7 @@
       // Ensure the DOM is ready before initializing all the anchors.
       $(function () {
         // Use the original anchors option for performance.
-        self.$delegates = $(self.options.anchors).not(self.getExclude()).anchor(self._options)
+        self.$delegates = $(self.options.anchors).not(exclude).anchor(self._options)
       })
     }
     else if (!this.link) {
@@ -244,58 +307,10 @@
       }
 
       // Hi-jack the container that the tooltip is to be attached to. This is
-      // so it can be appended inside this.$element instead of after it.
+      // so it can be appended inside this.$anchor instead of after it.
       if (this.$anchor && this.hasContent()) {
         this.options.originalContainer = this.options.container
         this.options.container = this.getContainer()
-      }
-    }
-  }
-
-  Anchor.prototype.bind = function () {
-    var self = this
-    var isLink = this.dom || this.isLink()
-
-    if (this.dom && !this.options.anchors && !this.options.anchorLinks) throw new Error('`anchors` or `anchorLinks` option must be specified when initializing ' + this.type + ' on any top level DOM object!')
-
-    // Immediately return if there is nothing to bind.
-    if (!this.dom && !isLink && !this.hasContent()) return
-
-    var exclude = this.getExclude()
-    var $element = this.dom || !exclude ? this.$element : this.$element.not(exclude)
-
-    // Construct the necessary selectors to delegate, if any.
-    var selectors = function (type) {
-      var wrapper = (type === 'anchors' ? '> .' + self.type + '-wrapper' : '')
-      var selectors = type === 'anchors' && self.options.anchors || type === 'links' && self.options.anchorLinks || ''
-      if (!self.dom) return wrapper || null
-      var bind = function (callback) {
-        var _selectors = selectors && selectors.split(/\s*,\s*(?![^(]*\))/ig) || []
-        for (var i = 0, l = _selectors.length; i < l; i++) {
-          _selectors[i] = callback.apply(this, [_selectors[i], _selectors])
-        }
-        return _selectors.join(',')
-      }
-      return bind(function (selector) { return selector + ':not(' + exclude + ')' + wrapper })
-    }
-
-    var triggerTypes = this.getTriggers()
-    for (var type in triggerTypes) {
-      if (!triggerTypes.hasOwnProperty(type)) continue
-
-      var delegated = selectors(type)
-      var triggers = typeof triggerTypes[type] === 'string' && triggerTypes[type].split(' ') || []
-      for (var i = triggers.length; i--;) {
-
-        var trigger = triggers[i]
-        if (trigger === 'click') {
-          if (type === 'links' && isLink) $element.on('click.bs.' + this.type, delegated, $.proxy(this.scrollTo, this))
-          else $element.on('click.bs.' + this.type, delegated, $.proxy(this.toggle, this))
-        }
-        else if (type === 'anchors' && trigger !== 'manual') {
-          $element.on((trigger === 'hover' ? 'mouseenter' : 'focusin') + '.bs.' + this.type, delegated, $.proxy(this.enter, this))
-          $element.on((trigger === 'hover' ? 'mouseleave' : 'focusout') + '.bs.' + this.type, delegated, $.proxy(this.leave, this))
-        }
       }
     }
   }
@@ -339,7 +354,7 @@
   }
 
   Anchor.prototype.getContainer = function () {
-    if (!this.hasContent()) return this.$anchor
+    if (this.dom || this.link || !this.hasContent() || !this.$anchor) return this.$element
     if (this.$container) return this.$container
     this.$container = this.$anchor.find('>.' + this.type + '-wrapper')
     if (this.$container[0]) return this.$container
@@ -353,21 +368,29 @@
     return this.$container
   }
 
-  // @todo There should really be a Tooltip method that this overrides.
-  Anchor.prototype.getDelegate = function (obj, $target) {
+  Anchor.prototype.getInstance = function (obj, $target) {
     if (obj instanceof this.constructor) return obj
 
-    $target = $target || obj instanceof jQuery.Event && $(obj.currentTarget) || $()
+    $target = $target || obj instanceof jQuery.Event && $(obj.currentTarget)
 
     // Ensure the original element is the target and not it's wrapper.
-    if ($target.is('.' + this.type + '-wrapper')) {
+    if ($target && $target.is('.' + this.type + '-wrapper')) {
       $target = $target.parent()
       if (obj.currentTarget) obj.currentTarget = $target[0]
     }
 
-    var self = $target.data('bs.' + this.type)
-    if (!self && !this.dom) return this
-    if (!self && $target[0]) $target.data('bs.' + this.type, (self = new this.constructor($target[0], this.getDelegateOptions())))
+    // Attempt to get any existing target instance.
+    var self = $target && $target.data('bs.' + this.type)
+
+    // Return the anchor instance.
+    if (!self && !$target && !$target[0] && !this.dom) return this.isLink() && this.$anchor ? this.getInstance.apply(this, [null, this.$anchor]) : this
+
+    // Create a new instance if there is a valid target.
+    if (!self && $target && $target[0]) $target.data('bs.' + this.type, (self = new this.constructor($target[0], this.getDelegateOptions())))
+
+    // Return the link's anchor instance.
+    if (self && self.isLink()) self = self.getInstance.apply(self, [null, self.$anchor])
+
     return self || this
   }
 
@@ -379,10 +402,7 @@
   }
 
   Anchor.prototype.getID = function (force) {
-    if (this.dom) {
-      this.id = this.originalId = false
-      return this.id
-    }
+    if (this.dom || this.link) return (this.id = this.originalId = false)
 
     var dynamic = typeof this.options.id === 'function' || typeof this.options.originalId === 'function'
     if (this.id !== null && !dynamic && !force) return this.id
@@ -390,8 +410,8 @@
     this.originalId = typeof this.options.originalId === 'function' && this.options.originalId.call(this) || this.options.originalId || false
     this.id = typeof this.options.id === 'function' && this.options.id.call(this) || this.options.id || this.originalId || false
 
-    if (!this.id) {
-      var el = this.$element[0]
+    if (!this.id && this.$anchor && this.$anchor[0]) {
+      var el = this.$anchor[0]
 
       // Attempt to retrieve the ID from the element.
       var id = el && el.id || el && el.nodeName === 'A' && el.name
@@ -400,7 +420,7 @@
       if (!id && this.options.anchorFindNamed) {
         var $named, traverse = ['next', 'prev', 'find']
         for (var i = traverse.length; i--;) {
-          $named = this.$element[traverse[i]]('a[name]:empty')
+          $named = this.$anchor[traverse[i]]('a[name]:empty')
           if ($named[0] && !id) { // Don't override existing ID
             id = $named[0].id || $named[0].name
             break
@@ -409,15 +429,15 @@
       }
 
       // Remove attributes.
-      if (id) this.$element.removeAttr('id')
-      if (el && el.nodeName === 'A' && el.name) this.$element.removeAttr('name')
+      if (id) el.removeAttribute('id')
+      if (el && el.nodeName === 'A' && el.name) el.name = '' && el.removeAttribute('name')
 
       // Save the original ID.
       this.id = this.originalId = id || false
 
       // If still no ID, attempt to auto-generate one from the anchor's text.
-      if (!this.id && this.options.anchorGenerateId && !this.isLink()) {
-        this.id = this.$anchor.text() || false
+      if (!this.id && this.options.anchorGenerateId && !this.link) {
+        this.id = el.textContent || el.innerText || false
         if (this.id) {
           if (this.options.anchorNormalizeId) this.id = this.normalizeId(this.id)
           if (this.options.anchorPrefixId) this.id = this.options.anchorPrefixId + '-' + this.id
@@ -426,26 +446,25 @@
       }
 
       // Ensure the original ID is stored on the element.
-      this.$element.attr('data-original-id', this.originalId.toString())
+      el.setAttribute('data-original-id', this.originalId.toString())
 
-      if (this.id) {
-        this.$element
-          .attr('id', this.id)
-          .attr('data-id', this.id)
-      }
+      if (this.id) el.setAttribute('id', this.id) && el.setAttribute('data-id', this.id)
     }
 
-    if (this.id !== this.originalId) this.$element.trigger('change.bs.anchor', this)
+    if (this.id !== this.originalId && this.$anchor) this.$anchor.trigger('change.bs.anchor', this)
 
     return this.id
   }
 
   Anchor.prototype.getTop = function () {
+    var self = this;
+    var instance = self.getInstance.apply(self, arguments)
+
     // Use the anchor's offsetTop value if it's fixed.
-    var top = this.$anchor.css('position') === 'fixed' ? this.$anchor[0].offsetTop : this.getPosition(this.$anchor).top
-    top -= parseInt(this.$viewport.css('margin-top'), 10) || 0
-    top -= parseInt(this.$viewport.css('padding-top'), 10) || 0
-    if (this.options.anchorOffset) top -= parseInt(this.options.anchorOffset, 10)
+    var top = instance.$anchor.css('position') === 'fixed' ? instance.$anchor[0].offsetTop : instance.getPosition(instance.$anchor).top
+    top -= parseInt(instance.$viewport.css('margin-top'), 10) || 0
+    top -= parseInt(instance.$viewport.css('padding-top'), 10) || 0
+    if (instance.options.anchorOffset) top -= parseInt(instance.options.anchorOffset, 10)
     return top < 0 ? 0 : top
   }
 
@@ -506,105 +525,76 @@
     return id || false
   }
 
-  Anchor.prototype.scrollTo = function (event) {
+  Anchor.prototype.scrollTo = function () {
     var self = this;
-    var delegate = self.getDelegate.apply(self, arguments)
+    var instance = self.getInstance.apply(self, arguments)
 
     // Immediately return if there is no anchor (or its currently detached
     // from the DOM), its disabled or currently scrolling.
-    if (!delegate.$anchor || !$.contains(document, delegate.$anchor[0]) || !delegate.enabled || delegate.scrolling || self.scrolling) return
-
-    // Handle anchor links.
-    if (delegate.link) {
-      // Prevent default behavior for links if an event was passed.
-      event && event.preventDefault()
-      delegate.$element.trigger('blur.bs.' + delegate.type)
-
-      // Proxy any scrolling to the actual anchor element in case there are
-      // data attributes that override desired functionality.
-      self.scrollTo.apply(self, [null, delegate.$anchor])
-      return
-    }
+    if (!instance.$anchor || !$.contains(document, instance.$anchor[0]) || !instance.enabled || instance.scrolling || self.scrolling) return
 
     // Create a scroll event for the anchor.
-    var e = $.Event('scroll.bs.' + delegate.type)
+    var e = $.Event('scroll.bs.' + instance.type)
 
     // Immediately return if the event was stopped.
     if (e.isDefaultPrevented()) return
 
-    var top = delegate.getTop()
+    var top = instance.getTop()
     var scroll = $.Deferred()
     scroll
       .then(function() {
-        delegate.scrolling = self.scrolling = true
+        instance.scrolling = self.scrolling = true
       })
       .then(function () {
-        if (delegate.options.animation && delegate.options.anchorDuration && delegate.options.anchorDuration > 0) {
-          return delegate.$viewport.stop(true).animate({ scrollTop: top }, { anchorDuration: delegate.options.anchorDuration }).promise()
+        if (instance.options.animation && instance.options.anchorDuration && instance.options.anchorDuration > 0) {
+          return instance.$viewport.stop(true).animate({ scrollTop: top }, { anchorDuration: instance.options.anchorDuration }).promise()
         }
-        else {
-          return delegate.$viewport.scrollTop(top).promise()
-        }
+        return instance.$viewport.scrollTop(top).promise()
       })
       .then(function () {
-        return delegate.updateHistory.call(delegate)
+        return $.Deferred(function (dfd) {
+          var history = instance.options.anchorHistory
+          if (typeof history === 'function') history = history.call(instance) || false
+          if (!history || (history !== 'append' && history !== 'replace')) return dfd.resolve()
+
+          var id = instance.getID()
+          instance.$anchor.attr('id', '')
+
+          var $fake = $('<div id="' + id + '"></div>')
+            .css({
+              position: 'absolute',
+              visibility: 'hidden',
+              // Base on new viewport scrolltop and margin offset.
+              top: instance.getTop() + 'px'
+            })
+            .appendTo(instance.$viewport)
+
+          if (history === 'replace' && window.history && window.history.replaceState) {
+            window.history.replaceState(null, null, '#' + instance.id);
+          }
+          else {
+            window.location.hash = id
+          }
+
+          $fake.remove()
+          instance.$anchor.attr('id', id)
+
+          // Resolve with a timeout (so onhashchange event executes first).
+          setTimeout(function () { dfd.resolve() }, 10)
+        })
       })
       .then(function() {
-        delegate.scrolling = self.scrolling = false
-        delegate.$element.trigger('focus.bs.' + delegate.type)
-        delegate.$element.trigger('scrolled.bs.' + delegate.type)
+        instance.scrolling = self.scrolling = false
+        instance.$anchor.trigger('focus.bs.' + instance.type)
+        instance.$anchor.trigger('scrolled.bs.' + instance.type)
       })
 
     scroll.resolve()
   }
 
-  Anchor.prototype.scrollToHash = function (hash) {
-    // Return immediately if its disabled or currently scrolling.
-    if (!this.enabled || this.scrolling) return
-
-    // Return to the previously recorded scrolltop (to prevent immediate an jump).
-    if (document.readyState === 'complete' && this.scrollTop !== null) this.$viewport.scrollTop(this.scrollTop)
-
-    // Use the provided hash or the window's current hash.
-    hash = hash && typeof hash === 'string' && hash.replace(/^#/, '') || window.location.hash.replace(/^#/, '')
-
-    // Find the hash's target anchor and then scroll to it.
-    var target = hash && document.getElementById(hash) || document.getElementsByName(hash)
-    if (target) $(target).anchor('scrollTo')
-  }
-
-  Anchor.prototype.updateHistory = function () {
-    var self = this;
-    return $.Deferred(function (dfd) {
-      var history = self.options.anchorHistory
-      if (typeof history === 'function') history = history.call(self) || false
-      if (!history || (history !== 'append' && history !== 'replace')) return dfd.resolve()
-
-      var id = self.getID()
-      self.$element.attr('id', '')
-
-      var $fake = $('<div id="' + id + '"></div>')
-        .css({
-          position: 'absolute',
-          visibility: 'hidden',
-          // Base on new viewport scrolltop and margin offset.
-          top: self.getTop() + 'px'
-        })
-        .appendTo(self.$viewport)
-
-      if (history === 'replace' && window.anchorHistory && window.anchorHistory.replaceState) {
-        window.anchorHistory.replaceState(null, null, '#' + self.id);
-      }
-      else {
-        window.location.hash = id
-      }
-
-      $fake.remove()
-      self.$element.attr('id', id)
-
-      // Resolve with a timeout (so onhashchange event executes first).
-      setTimeout(function () { dfd.resolve() }, 10)
-    });
+  Anchor.prototype.setOption = function (option, value) {
+    if (typeof option === 'object') this.options = $.extend(true, {}, this.options, option)
+    else this.options[option] = value
   }
 
   // ANCHOR PLUGIN DEFINITION
@@ -612,22 +602,26 @@
 
   function Plugin(option) {
     // Extract the arguments.
-    var args = $.extend([], arguments)
-    args.shift()
+    var args = Array.prototype.slice.call(arguments, 1);
 
     // Capture the selector used, if any, to override the default "anchors" option.
     // @see Anchor.prototype.getOptions()
     var selector = this.selector
 
     // Iterate over each element.
-    return this.each(function () {
+    var ret;
+    this.each(function () {
       var $this = $(this)
       var data = $this.data('bs.anchor')
       var options = typeof option == 'object' && option
 
       if (!data) $this.data('bs.anchor', (data = new Anchor(this, options, selector)))
-      if (typeof option == 'string') data[option].apply(data, args)
+      if (typeof option == 'string') ret = data[option].apply(data, args)
     })
+
+    // If just one element and there was a result returned for the option passed,
+    // then return the result. Otherwise, just return the jQuery object.
+    return this.length === 1 && ret !== undefined ? ret : this
   }
 
   var old = $.fn.anchor
