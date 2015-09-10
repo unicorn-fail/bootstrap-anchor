@@ -275,7 +275,7 @@
 
         // Find the hash's target anchor and then scroll to it.
         var hash = window.location.hash.replace(/^#/, '')
-        var target = hash && document.getElementById(hash) || document.getElementsByName(hash)
+        var target = hash && document.getElementById(hash) || hash && document.getElementsByName(hash)
         if (target) $(target).anchor('scrollTo')
       }
 
