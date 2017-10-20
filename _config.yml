@@ -16,9 +16,9 @@ encoding:         UTF-8
 # Custom vars
 name:             Bootstrap Anchor
 description:      The missing Bootstrap plugin for anchor support.
-current_version:  0.0.1
-repo:             https://github.com/markcarver/bootstrap-anchor
+current_version:  0.0.2
+repo:             https://github.com/unicorn-fail/bootstrap-anchor
 
 download:
-  source:         https://github.com/markcarver/bootstrap-anchor/archive/v0.0.1.zip
-  dist:           https://github.com/markcarver/bootstrap-anchor/releases/download/v0.0.1/bootstrap-anchor-0.0.1-dist.zip
+  source:         https://github.com/unicorn-fail/bootstrap-anchor/archive/v0.0.2.zip
+  dist:           https://github.com/unicorn-fail/bootstrap-anchor/releases/download/v0.0.2/bootstrap-anchor-0.0.2-dist.zip
