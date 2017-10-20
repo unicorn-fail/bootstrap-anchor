@@ -204,8 +204,12 @@
     this.$viewport  = this.options.viewport && $(this.options.viewport.selector || this.options.viewport)
     this.link       = this.isLink()
     this.id         = this.getID()
+    this.inState    = { click: false, hover: false, focus: false }
 
     if (this.dom && !this.options.anchors && !this.options.anchorLinks) throw new Error('`anchors` or `anchorLinks` option must be specified when initializing ' + this.type + ' on any top level DOM object!')
+
+    // Trigger the "init" event.
+    if (this.dom || this.link) this.$element.trigger('init.bs.' + this.type, this)
 
     var exclude = this.getExclude()
 
@@ -229,9 +233,13 @@
       }
 
       var anchorLinkClick = function (e) {
+        var instance = this.getInstance.apply(this, arguments)
+        // Immediately return if there is no valid anchor present on page.
+        if (!instance.$anchor) {
+          return;
+        }
         e.preventDefault()
         e.stopPropagation()
-        var instance = this.getInstance.apply(this, arguments)
         instance.scrollTo()
       }
 
@@ -327,7 +335,7 @@
     // Attempt to extract the hash if the element is a link.
     else if (this.isLink()) {
         var hash = el && this.$element[0].nodeName === 'A' &&
-            // Verify the link goes to an anchor on the same page.
+          // Verify the link goes to an anchor on the same page.
           el.host === window.location.host &&
           el.pathname === window.location.pathname &&
           el.search === window.location.search &&
@@ -455,11 +463,26 @@
     var self = this;
     var instance = self.getInstance.apply(self, arguments)
 
+    var getViewportOffset = function () {
+      var offset = 0;
+      instance.$viewport.each(function () {
+        instance += parseInt($(this).css('margin-top'), 10) || 0
+        offset += parseInt($(this).css('padding-top'), 10) || 0
+      })
+    }
+
     // Use the anchor's offsetTop value if it's fixed.
     var top = instance.$anchor.css('position') === 'fixed' ? instance.$anchor[0].offsetTop : instance.getPosition(instance.$anchor).top
-    top -= parseInt(instance.$viewport.css('margin-top'), 10) || 0
-    top -= parseInt(instance.$viewport.css('padding-top'), 10) || 0
-    if (instance.options.anchorOffset) top -= parseInt(instance.options.anchorOffset, 10)
+    if (typeof instance.options.anchorOffset === 'function') {
+      top -= parseInt(instance.options.anchorOffset.call(this, top), 10) || 0
+    }
+    else if (instance.options.anchorOffset !== void 0) {
+      top -= getViewportOffset()
+      top -= parseInt(instance.options.anchorOffset, 10) || 0
+    }
+    else {
+      top -= getViewportOffset()
+    }
     return top < 0 ? 0 : top
   }
 
