@@ -80,6 +80,7 @@
 
     // Override Tooltip default options.
     placement: 'auto left',
+    scrollableElement: 'html,body',
     template: '<span class="anchor-link text-primary" role="tooltip"><a href="#"></a></span>',
     trigger: {
       anchors: 'hover focus',
@@ -194,17 +195,17 @@
 
     var self = this
 
-    this.enabled    = true
-    this.type       = 'anchor'
-    this.dom        = this.isDOM(element)
-    this.$element   = this.dom ? $(document) : $(element)
-    this.options    = this.getOptions(options, selector)
-    this.$anchor    = this.getAnchor()
-    this.$delegates = false
-    this.$viewport  = this.options.viewport && $(this.options.viewport.selector || this.options.viewport)
-    this.link       = this.isLink()
-    this.id         = this.getID()
-    this.inState    = { click: false, hover: false, focus: false }
+    this.enabled      = true
+    this.type         = 'anchor'
+    this.dom          = this.isDOM(element)
+    this.$element     = this.dom ? $(document) : $(element)
+    this.options      = this.getOptions(options, selector)
+    this.$anchor      = this.getAnchor()
+    this.$delegates   = false
+    this.$scrollable  = this.options.scrollableElement && $(this.options.scrollableElement)
+    this.link         = this.isLink()
+    this.id           = this.getID()
+    this.inState      = { click: false, hover: false, focus: false }
 
     if (this.dom && !this.options.anchors && !this.options.anchorLinks) throw new Error('`anchors` or `anchorLinks` option must be specified when initializing ' + this.type + ' on any top level DOM object!')
 
@@ -269,9 +270,9 @@
       var $window = $(window)
       this._options = $.extend({}, this.options, { 'trigger': 'manual' })
 
-      // Track current scrollTop of the viewport.
+      // Track current scrollTop of the scrollable element.
       $window.on('scroll.bs.' + this.type, function () {
-        self.scrollTop = self.getPosition(self.$viewport).scroll
+        self.scrollTop = self.getPosition(self.$scrollable).scroll
       })
 
       var scrollToHash = function () {
@@ -279,7 +280,7 @@
         if (!self.enabled || self.scrolling) return
 
         // Return to the previously recorded scrolltop (to prevent immediate an jump).
-        if (document.readyState === 'complete' && self.scrollTop !== null) self.$viewport.scrollTop(self.scrollTop)
+        if (document.readyState === 'complete' && self.scrollTop !== null) self.$scrollable.scrollTop(self.scrollTop)
 
         // Find the hash's target anchor and then scroll to it.
         var hash = window.location.hash.replace(/^#/, '')
@@ -465,10 +466,11 @@
 
     var getViewportOffset = function () {
       var offset = 0;
-      instance.$viewport.each(function () {
-        instance += parseInt($(this).css('margin-top'), 10) || 0
+      instance.$scrollable.each(function () {
+        offset += parseInt($(this).css('margin-top'), 10) || 0
         offset += parseInt($(this).css('padding-top'), 10) || 0
       })
+      return offset;
     }
 
     // Use the anchor's offsetTop value if it's fixed.
@@ -565,9 +567,9 @@
       })
       .then(function () {
         if (instance.options.animation && instance.options.anchorDuration && instance.options.anchorDuration > 0) {
-          return instance.$viewport.stop(true).animate({ scrollTop: top }, { anchorDuration: instance.options.anchorDuration }).promise()
+          return instance.$scrollable.stop(true).animate({ scrollTop: top }, { anchorDuration: instance.options.anchorDuration }).promise()
         }
-        return instance.$viewport.scrollTop(top).promise()
+        return instance.$scrollable.scrollTop(top).promise()
       })
       .then(function () {
         return $.Deferred(function (dfd) {

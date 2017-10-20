@@ -22,8 +22,8 @@ module.exports = function (grunt) {
     pkg: grunt.file.readJSON('package.json'),
     banner: '/*!\n' +
             ' * <%= pkg.title %> v<%= pkg.version %> (<%= pkg.homepage %>)\n' +
-            ' * Copyright <%= grunt.template.today("yyyy") %> <%= pkg.author %>\n' +
-            ' * Dual licensed under <%= pkg.license.type %> (<%= pkg.license.url %>)\n' +
+            ' * Copyright 2015-<%= grunt.template.today("yyyy") %> <%= pkg.author %>\n' +
+            ' * Dual licensed under <%= pkg.licenses[0].type %> and <%= pkg.licenses[1].type %> (<%= pkg.licenses[0].url %>)\n' +
             ' */\n',
 
     // Task configuration.

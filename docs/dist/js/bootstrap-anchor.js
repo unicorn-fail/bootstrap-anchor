@@ -1,7 +1,7 @@
 /*!
- * Bootstrap Anchor v0.0.1 (http://markcarver.github.io/bootstrap-anchor/)
- * Copyright 2015 Mark Carver
- * Dual licensed under MIT/GLPv2 (https://github.com/markcarver/bootstrap-anchor/blob/master/LICENSE)
+ * Bootstrap Anchor v0.0.2 (http://markcarver.github.io/bootstrap-anchor/)
+ * Copyright 2015-2017 Mark Carver
+ * Dual licensed under MIT and GPL-2.0 (https://github.com/markcarver/bootstrap-anchor/blob/master/LICENSE)
  */
 +function ($, undefined) {
   'use strict';
@@ -85,6 +85,7 @@
 
     // Override Tooltip default options.
     placement: 'auto left',
+    scrollableElement: 'html,body',
     template: '<span class="anchor-link text-primary" role="tooltip"><a href="#"></a></span>',
     trigger: {
       anchors: 'hover focus',
@@ -199,18 +200,22 @@
 
     var self = this
 
-    this.enabled    = true
-    this.type       = 'anchor'
-    this.dom        = this.isDOM(element)
-    this.$element   = this.dom ? $(document) : $(element)
-    this.options    = this.getOptions(options, selector)
-    this.$anchor    = this.getAnchor()
-    this.$delegates = false
-    this.$viewport  = this.options.viewport && $(this.options.viewport.selector || this.options.viewport)
-    this.link       = this.isLink()
-    this.id         = this.getID()
+    this.enabled      = true
+    this.type         = 'anchor'
+    this.dom          = this.isDOM(element)
+    this.$element     = this.dom ? $(document) : $(element)
+    this.options      = this.getOptions(options, selector)
+    this.$anchor      = this.getAnchor()
+    this.$delegates   = false
+    this.$scrollable  = this.options.scrollableElement && $(this.options.scrollableElement)
+    this.link         = this.isLink()
+    this.id           = this.getID()
+    this.inState      = { click: false, hover: false, focus: false }
 
     if (this.dom && !this.options.anchors && !this.options.anchorLinks) throw new Error('`anchors` or `anchorLinks` option must be specified when initializing ' + this.type + ' on any top level DOM object!')
+
+    // Trigger the "init" event.
+    if (this.dom || this.link) this.$element.trigger('init.bs.' + this.type, this)
 
     var exclude = this.getExclude()
 
@@ -234,9 +239,13 @@
       }
 
       var anchorLinkClick = function (e) {
+        var instance = this.getInstance.apply(this, arguments)
+        // Immediately return if there is no valid anchor present on page.
+        if (!instance.$anchor) {
+          return;
+        }
         e.preventDefault()
         e.stopPropagation()
-        var instance = this.getInstance.apply(this, arguments)
         instance.scrollTo()
       }
 
@@ -266,9 +275,9 @@
       var $window = $(window)
       this._options = $.extend({}, this.options, { 'trigger': 'manual' })
 
-      // Track current scrollTop of the viewport.
+      // Track current scrollTop of the scrollable element.
       $window.on('scroll.bs.' + this.type, function () {
-        self.scrollTop = self.getPosition(self.$viewport).scroll
+        self.scrollTop = self.getPosition(self.$scrollable).scroll
       })
 
       var scrollToHash = function () {
@@ -276,11 +285,11 @@
         if (!self.enabled || self.scrolling) return
 
         // Return to the previously recorded scrolltop (to prevent immediate an jump).
-        if (document.readyState === 'complete' && self.scrollTop !== null) self.$viewport.scrollTop(self.scrollTop)
+        if (document.readyState === 'complete' && self.scrollTop !== null) self.$scrollable.scrollTop(self.scrollTop)
 
         // Find the hash's target anchor and then scroll to it.
         var hash = window.location.hash.replace(/^#/, '')
-        var target = hash && document.getElementById(hash) || document.getElementsByName(hash)
+        var target = hash && document.getElementById(hash) || hash && document.getElementsByName(hash)
         if (target) $(target).anchor('scrollTo')
       }
 
@@ -332,7 +341,7 @@
     // Attempt to extract the hash if the element is a link.
     else if (this.isLink()) {
         var hash = el && this.$element[0].nodeName === 'A' &&
-            // Verify the link goes to an anchor on the same page.
+          // Verify the link goes to an anchor on the same page.
           el.host === window.location.host &&
           el.pathname === window.location.pathname &&
           el.search === window.location.search &&
@@ -460,11 +469,27 @@
     var self = this;
     var instance = self.getInstance.apply(self, arguments)
 
+    var getViewportOffset = function () {
+      var offset = 0;
+      instance.$scrollable.each(function () {
+        offset += parseInt($(this).css('margin-top'), 10) || 0
+        offset += parseInt($(this).css('padding-top'), 10) || 0
+      })
+      return offset;
+    }
+
     // Use the anchor's offsetTop value if it's fixed.
     var top = instance.$anchor.css('position') === 'fixed' ? instance.$anchor[0].offsetTop : instance.getPosition(instance.$anchor).top
-    top -= parseInt(instance.$viewport.css('margin-top'), 10) || 0
-    top -= parseInt(instance.$viewport.css('padding-top'), 10) || 0
-    if (instance.options.anchorOffset) top -= parseInt(instance.options.anchorOffset, 10)
+    if (typeof instance.options.anchorOffset === 'function') {
+      top -= parseInt(instance.options.anchorOffset.call(this, top), 10) || 0
+    }
+    else if (instance.options.anchorOffset !== void 0) {
+      top -= getViewportOffset()
+      top -= parseInt(instance.options.anchorOffset, 10) || 0
+    }
+    else {
+      top -= getViewportOffset()
+    }
     return top < 0 ? 0 : top
   }
 
@@ -547,9 +572,9 @@
       })
       .then(function () {
         if (instance.options.animation && instance.options.anchorDuration && instance.options.anchorDuration > 0) {
-          return instance.$viewport.stop(true).animate({ scrollTop: top }, { anchorDuration: instance.options.anchorDuration }).promise()
+          return instance.$scrollable.stop(true).animate({ scrollTop: top }, { anchorDuration: instance.options.anchorDuration }).promise()
         }
-        return instance.$viewport.scrollTop(top).promise()
+        return instance.$scrollable.scrollTop(top).promise()
       })
       .then(function () {
         return $.Deferred(function (dfd) {
